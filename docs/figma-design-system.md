@@ -1,5 +1,12 @@
 # The Life Edit Figma Extraction
 
+> Version 2 direction: the user explicitly requested a full desktop application,
+> not the prototype's phone viewer. The phone dimensions and viewer layout below
+> are historical extraction notes, not implementation requirements. Current
+> screens use a full-width workspace, responsive sidebar, mobile bottom tabs,
+> and the extracted palette, typography, and component styling. See
+> `version-two.md` for the current behavior and setup.
+
 The Figma Make prototype is the visual source of truth for this build. The implementation in `components/figma-life-edit.tsx` follows these extracted rules and should be kept aligned with them as new product features are connected.
 
 ## Screens Analyzed

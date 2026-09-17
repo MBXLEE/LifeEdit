@@ -1,0 +1,17 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const ts=require('typescript');
+const Module=require('node:module');
+const path=require('node:path');
+const file=path.resolve('lib/allocation-status.ts'),mod=new Module(file,module);
+mod._compile(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,file);
+const {allocationStatus:s}=mod.exports;
+assert.equal(s(10000,50,4499).state,'within');
+assert.equal(s(10000,50,4500).state,'near');
+assert.equal(s(10000,50,5000).state,'reached');
+assert.equal(s(10000,50,5001).state,'exceeded');
+assert.equal(s(0,50,300).state,'no-income');
+assert.equal(s(10000,0,1).state,'exceeded');
+assert.equal(s(10000,0,0).state,'within');
+assert.equal(s(10000,50,5500).remaining,-500);
+console.log('PASS: allocation threshold, reached, exceeded, zero-target and no-income cases.');

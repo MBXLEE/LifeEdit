@@ -42,6 +42,7 @@ export async function middleware(request: NextRequest) {
   const protectedPath = !request.nextUrl.pathname.startsWith("/login") &&
     !request.nextUrl.pathname.startsWith("/signup") &&
     !request.nextUrl.pathname.startsWith("/forgot-password") &&
+    !request.nextUrl.pathname.startsWith("/auth/callback") &&
     !request.nextUrl.pathname.startsWith("/_next") &&
     request.nextUrl.pathname !== "/";
 
