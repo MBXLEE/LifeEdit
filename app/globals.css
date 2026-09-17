@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root,
+  [data-theme="ocean"] {
+    --background: 204 44% 97%;
+    --foreground: 218 25% 18%;
+    --card: 0 0% 100%;
+    --card-foreground: 218 25% 18%;
+    --primary: 207 42% 43%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 202 48% 90%;
+    --secondary-foreground: 215 34% 24%;
+    --muted: 210 30% 93%;
+    --muted-foreground: 215 15% 45%;
+    --accent: 218 31% 54%;
+    --accent-foreground: 0 0% 100%;
+    --border: 210 28% 86%;
+    --input: 210 28% 86%;
+    --ring: 207 42% 43%;
+  }
+
+  [data-theme="blush"] {
+    --background: 345 42% 97%;
+    --foreground: 340 20% 20%;
+    --card: 0 0% 100%;
+    --card-foreground: 340 20% 20%;
+    --primary: 348 38% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 344 48% 91%;
+    --secondary-foreground: 340 23% 25%;
+    --muted: 345 32% 93%;
+    --muted-foreground: 340 12% 46%;
+    --accent: 18 42% 58%;
+    --accent-foreground: 0 0% 100%;
+    --border: 345 28% 86%;
+    --input: 345 28% 86%;
+    --ring: 348 38% 52%;
+  }
+
+  [data-theme="sage"] {
+    --background: 105 28% 96%;
+    --foreground: 138 20% 18%;
+    --card: 0 0% 100%;
+    --card-foreground: 138 20% 18%;
+    --primary: 139 25% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 104 28% 88%;
+    --secondary-foreground: 137 22% 22%;
+    --muted: 104 20% 91%;
+    --muted-foreground: 135 12% 42%;
+    --accent: 174 25% 44%;
+    --accent-foreground: 0 0% 100%;
+    --border: 104 20% 84%;
+    --input: 104 20% 84%;
+    --ring: 139 25% 42%;
+  }
+
+  [data-theme="cream"] {
+    --background: 38 45% 96%;
+    --foreground: 222 18% 20%;
+    --card: 45 52% 99%;
+    --card-foreground: 222 18% 20%;
+    --primary: 214 28% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 38 42% 88%;
+    --secondary-foreground: 222 20% 24%;
+    --muted: 38 28% 91%;
+    --muted-foreground: 222 11% 43%;
+    --accent: 156 20% 44%;
+    --accent-foreground: 0 0% 100%;
+    --border: 38 30% 83%;
+    --input: 38 30% 83%;
+    --ring: 214 28% 42%;
+  }
+
+  [data-theme="midnight"] {
+    --background: 225 27% 10%;
+    --foreground: 214 30% 93%;
+    --card: 225 24% 14%;
+    --card-foreground: 214 30% 93%;
+    --primary: 204 48% 68%;
+    --primary-foreground: 225 27% 10%;
+    --secondary: 225 19% 21%;
+    --secondary-foreground: 214 30% 93%;
+    --muted: 225 19% 20%;
+    --muted-foreground: 214 16% 70%;
+    --accent: 270 28% 70%;
+    --accent-foreground: 225 27% 10%;
+    --border: 225 17% 25%;
+    --input: 225 17% 25%;
+    --ring: 204 48% 68%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .font-display {
+    font-family: Georgia, "Times New Roman", serif;
+  }
+
+  .life-grid {
+    @apply grid gap-4 md:grid-cols-2 xl:grid-cols-4;
+  }
+
+  .page-heading {
+    @apply mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between;
+  }
+}
