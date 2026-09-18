@@ -12,7 +12,26 @@ export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+  const publicPath = request.nextUrl.pathname.startsWith("/login") ||
+    request.nextUrl.pathname.startsWith("/signup") ||
+    request.nextUrl.pathname.startsWith("/forgot-password") ||
+    request.nextUrl.pathname.startsWith("/reset-password") ||
+    request.nextUrl.pathname.startsWith("/auth/callback") ||
+    request.nextUrl.pathname.startsWith("/_next") ||
+    request.nextUrl.pathname.startsWith("/icon") ||
+    request.nextUrl.pathname.startsWith("/maskable-icon") ||
+    request.nextUrl.pathname === "/apple-touch-icon.png" ||
+    request.nextUrl.pathname === "/favicon.ico" ||
+    request.nextUrl.pathname === "/manifest.webmanifest" ||
+    request.nextUrl.pathname === "/sw.js";
+
   if (!supabaseUrl || !supabaseAnonKey) {
+    if (!publicPath && request.nextUrl.pathname !== "/") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
+    }
+
     return response;
   }
 
@@ -39,12 +58,7 @@ export async function middleware(request: NextRequest) {
     data: { user }
   } = await supabase.auth.getUser();
 
-  const protectedPath = !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/signup") &&
-    !request.nextUrl.pathname.startsWith("/forgot-password") &&
-    !request.nextUrl.pathname.startsWith("/auth/callback") &&
-    !request.nextUrl.pathname.startsWith("/_next") &&
-    request.nextUrl.pathname !== "/";
+  const protectedPath = !publicPath && request.nextUrl.pathname !== "/";
 
   if (!user && protectedPath) {
     const url = request.nextUrl.clone();
