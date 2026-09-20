@@ -1,7 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="LifeEdit app icon">
-  <rect width="512" height="512" rx="112" fill="#eef3f7"/>
-  <circle cx="256" cy="256" r="164" fill="#ffffff"/>
-  <circle cx="256" cy="256" r="126" fill="none" stroke="#7890a2" stroke-width="22"/>
-  <path d="M191 260c42-82 92-82 130 0 11 23 23 47 45 64-35 9-70-1-95-35-12-17-22-36-33-54-14 20-27 49-47 70-19 19-42 27-72 21 33-19 51-43 72-66Z" fill="#4f7187"/>
-  <path d="M221 178c18-34 52-51 91-45-27 16-45 38-56 66-9-10-20-17-35-21Z" fill="#9a6f78"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="LifeEdit app icon"><image width="512" height="512" href="/icon-512.png"/></svg>
