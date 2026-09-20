@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Edge mobile preview",
+      "type": "msedge",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "preLaunchTask": "Next.js dev server",
+      "runtimeArgs": [
+        "--auto-open-devtools-for-tabs",
+        "--window-size=390,844",
+        "--user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+      ],
+      "webRoot": "${workspaceFolder}"
+    }
+  ]
+}

@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { Route } from "next";
 import { advanceFocus, extraDefaults, type ExtraData, type Exercise } from "@/lib/life-domain";
 import { refinementDefaults, type RefinementData, type Classification } from "@/lib/refinements";
+import { defaultNotificationSettings, type NotificationSettings } from "@/lib/notifications";
 
 export const pillars = ["Financial", "Physical", "Mental & Emotional", "Social", "Spiritual", "Personal Growth"];
 export const themeNames = ["Ocean", "Blush", "Sage", "Cream", "Midnight"] as const;
@@ -30,6 +31,7 @@ export type LifeData = ExtraData & RefinementData & {
   workoutTypes: string[]; workouts: Workout[]; workoutLogs: { id: string; name: string; date: string; minutes: number; volume: number; exercises?: Workout["exercises"]; notes?: string }[];
   focusTypes: string[]; focus: { id: string; name: string; seconds: number; date: string }[];
   board: { id: string; title: string; url: string; category?: string; notes?: string; goalId?: string }[];
+  notificationSettings: NotificationSettings;
 };
 export function emptyData(): LifeData {
   return { ...extraDefaults(), ...refinementDefaults(), version: 2, name: "", theme: "Ocean", onboarded: false, assessment: {}, areas: [...pillars], priorities: [], identity: "", vision: "", mission: "", lifestyle: "", goals: [], habits: [], tasks: [],
@@ -40,7 +42,17 @@ export function emptyData(): LifeData {
       ["Who did I connect with today?", "How can I strengthen important relationships?"],
       ["What did I learn during reflection today?", "What am I praying for?"],
       ["What skill am I improving?", "What progress did I make?"]
-    ][i] })), journals: [], currencies: [{ code: "ZAR", name: "South African rand", symbol: "R" }, { code: "USD", name: "US dollar", symbol: "$" }, { code: "GBP", name: "British pound", symbol: "£" }, { code: "EUR", name: "Euro", symbol: "€" }], currency: "ZAR", categories: ["Housing", "Utilities", "Food", "Transport", "Entertainment", "Savings", "Investments", "Health", "Giving"], budgets: [], transactions: [], workoutTypes: ["Full Body", "Upper Body", "Lower Body", "Push", "Pull", "Legs", "Cardio", "Core", "Mobility", "Recovery"], workouts: [], workoutLogs: [], focusTypes: ["Study", "Deep Work", "Reading", "Work"], focus: [], board: [] };
+    ][i] })), journals: [], currencies: [{ code: "ZAR", name: "South African rand", symbol: "R" }, { code: "USD", name: "US dollar", symbol: "$" }, { code: "GBP", name: "British pound", symbol: "£" }, { code: "EUR", name: "Euro", symbol: "€" }], currency: "ZAR", categories: ["Housing", "Utilities", "Food", "Transport", "Entertainment", "Savings", "Investments", "Health", "Giving"], budgets: [], transactions: [], workoutTypes: ["Full Body", "Upper Body", "Lower Body", "Push", "Pull", "Legs", "Cardio", "Core", "Mobility", "Recovery"], workouts: [], workoutLogs: [], focusTypes: ["Study", "Deep Work", "Reading", "Work"], focus: [], board: [], notificationSettings: defaultNotificationSettings() };
+}
+function withDefaults(raw: Partial<LifeData>): LifeData {
+  const base = emptyData();
+  const notificationSettings = raw.notificationSettings ? {
+    ...base.notificationSettings,
+    ...raw.notificationSettings,
+    categories: { ...base.notificationSettings.categories, ...raw.notificationSettings.categories },
+    reminderTimes: { ...base.notificationSettings.reminderTimes, ...raw.notificationSettings.reminderTimes }
+  } : base.notificationSettings;
+  return { ...base, ...raw, notificationSettings };
 }
 type Store = { data: LifeData; update: (fn: (data: LifeData) => LifeData) => void; ready: boolean; status: string; error: string; retry: () => void; account: boolean; back: () => void; undo: () => void; undoLabel: string; dismissUndo: () => void; offerUndo: (label: string, restore: (data: LifeData) => LifeData) => void };
 const Context = createContext<Store | null>(null);
@@ -83,11 +95,11 @@ export function LifeProvider({ children }: { children: ReactNode }) {
           owner.current = auth.user.id;
           const { data: row, error: readError } = await db.from("life_workspaces").select("data,revision").eq("user_id", auth.user.id).maybeSingle();
           if (readError) throw readError;
-          const loaded = { ...emptyData(), ...(row?.data ?? {}), name: row?.data?.name ?? auth.user.user_metadata?.name ?? "" };
+          const loaded = withDefaults({ ...(row?.data ?? {}), name: row?.data?.name ?? auth.user.user_metadata?.name ?? "" });
           if (alive) { revision.current = row?.revision ?? 0; latest.current = loaded; setData(loaded); setAccount(true); setReady(true); setStatus("Saved to your account"); }
         } else {
           const raw = localStorage.getItem("life-edit-preview-v2");
-          const loaded = raw ? { ...emptyData(), ...JSON.parse(raw) } : emptyData();
+          const loaded = raw ? withDefaults(JSON.parse(raw)) : emptyData();
           if (alive) { latest.current = loaded; setData(loaded); setReady(true); setStatus("Saved on this device"); }
         }
       } catch (e) { if (alive) setError(e instanceof Error ? e.message : "Unable to load your workspace. Please retry."); }
@@ -164,3 +176,4 @@ export function LifeProvider({ children }: { children: ReactNode }) {
   return <Context.Provider value={{ data, update, ready, status, error, account, back, undo, undoLabel, offerUndo: (label, restore) => { undoAction.current = restore; setUndoLabel(label); }, dismissUndo: () => { undoAction.current = null; setUndoLabel(""); }, retry: () => { if (!ready) { setError(""); setAttempt(n => n + 1); } else { setData({ ...latest.current }); } } }}>{children}</Context.Provider>;
 }
 export function useLife() { const value = useContext(Context); if (!value) throw new Error("LifeProvider required"); return value; }
+

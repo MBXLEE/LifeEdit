@@ -7,6 +7,16 @@ type CookieToSet = {
   options: Parameters<NextResponse["cookies"]["set"]>[2];
 };
 
+const persistenceCookie = "life-edit-auth-persistence";
+
+function sessionAwareOptions(request: NextRequest, options: CookieToSet["options"]) {
+  if (request.cookies.get(persistenceCookie)?.value !== "session") return options;
+  const next = { ...options };
+  delete next?.maxAge;
+  delete next?.expires;
+  return next;
+}
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -47,7 +57,7 @@ export async function middleware(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
+            response.cookies.set(name, value, sessionAwareOptions(request, options))
           );
         }
       }

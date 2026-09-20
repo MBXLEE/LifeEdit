@@ -4,6 +4,7 @@ import "./globals.css";
 import { AppShell } from "@/components/app-shell";
 import { PwaRegistrar } from "@/components/pwa-registrar";
 import { ThemeProvider } from "@/components/theme-provider";
+import { NotificationManager } from "@/components/notification-manager";
 import { LifeProvider } from "@/lib/life-store";
 
 export const metadata: Metadata = {
@@ -43,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <PwaRegistrar />
         <ThemeProvider>
-          <LifeProvider><AppShell>{children}</AppShell></LifeProvider>
+          <LifeProvider><NotificationManager /><AppShell>{children}</AppShell></LifeProvider>
         </ThemeProvider>
       </body>
     </html>
