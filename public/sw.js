@@ -18,7 +18,16 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(fetch(event.request));
+  event.respondWith(
+    fetch(event.request).catch(async () => {
+      const cached = await caches.match(event.request);
+      if (cached) return cached;
+      if (event.request.mode === "navigate") {
+        return caches.match("/") || Response.error();
+      }
+      return Response.error();
+    })
+  );
 });
 
 self.addEventListener("notificationclick", (event) => {
