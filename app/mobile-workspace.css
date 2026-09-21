@@ -132,7 +132,7 @@
   .le-modal>form,.le-modal>div:not(.le-modal-header),.le-modal>section,.le-modal>p,.le-modal>fieldset,.le-modal>button { margin-left:22px;margin-right:22px; }
   .le-modal>form { padding-bottom:0; }
   .le-modal form>.le-row:last-child,.le-modal form>button[type=submit]:last-child { position:sticky;bottom:0;z-index:6;margin:20px -22px 0;padding:14px 22px max(14px,env(safe-area-inset-bottom));background:hsl(var(--card));border-top:1px solid hsl(var(--border));box-shadow:0 -16px 30px hsl(var(--background)/.78); }
-  .le-modal form>button[type=submit]:last-child { display:flex;width:calc(100% + 44px);justify-content:center;border-radius:0; }
+  .le-modal form>button[type=submit]:last-child { display:flex;width:calc(100% + 44px);justify-content:center;border-radius:0;background:hsl(var(--primary));color:hsl(var(--primary-foreground)); }
   .le-modal form>.le-row:last-child .le-button:first-child { flex:1;justify-content:center; }
   .le-progress { min-width:0;height:6px; }
   .le-table-scroll { overscroll-behavior-x:contain; }
