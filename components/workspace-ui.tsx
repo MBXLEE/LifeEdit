@@ -3,7 +3,7 @@ import { WorkspaceHeading } from "./workspace-heading";
 import { Children, cloneElement, isValidElement, useEffect, useId, useRef, type ReactElement, type ReactNode } from "react";
 import { Archive, Pencil, Plus, Trash2, X } from "lucide-react";
 
-export function Button({ children, onClick, type = "button", secondary = false, disabled = false }: { children: ReactNode; onClick?: () => void; type?: "button" | "submit"; secondary?: boolean; disabled?: boolean }) { return <button type={type} disabled={disabled} onClick={onClick} className={`le-button ${secondary ? "le-secondary" : ""}`}>{children}</button>; }
+export function Button({ children, onClick, type = "button", secondary = false, disabled = false, className = "" }: { children: ReactNode; onClick?: () => void; type?: "button" | "submit"; secondary?: boolean; disabled?: boolean; className?: string }) { return <button type={type} disabled={disabled} onClick={onClick} className={`le-button ${secondary ? "le-secondary" : ""} ${className}`.trim()}>{children}</button>; }
 export function IconButton({ title, children, onClick }: { title: string; children: ReactNode; onClick: () => void }) { return <button type="button" className="le-icon" title={title} aria-label={title} onClick={onClick}>{children}</button>; }
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) { return <section className={`le-card ${className}`}>{children}</section>; }
 export const Heading = WorkspaceHeading;
