@@ -1,11 +1,12 @@
 "use client";
+import { WorkspaceHeading } from "./workspace-heading";
 import { Children, cloneElement, isValidElement, useEffect, useId, useRef, type ReactElement, type ReactNode } from "react";
 import { Archive, Pencil, Plus, Trash2, X } from "lucide-react";
 
 export function Button({ children, onClick, type = "button", secondary = false, disabled = false }: { children: ReactNode; onClick?: () => void; type?: "button" | "submit"; secondary?: boolean; disabled?: boolean }) { return <button type={type} disabled={disabled} onClick={onClick} className={`le-button ${secondary ? "le-secondary" : ""}`}>{children}</button>; }
 export function IconButton({ title, children, onClick }: { title: string; children: ReactNode; onClick: () => void }) { return <button type="button" className="le-icon" title={title} aria-label={title} onClick={onClick}>{children}</button>; }
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) { return <section className={`le-card ${className}`}>{children}</section>; }
-export function Heading({ section, title, children }: { section: string; title: string; children?: ReactNode }) { return <div className="le-heading"><div><p className="le-eyebrow">{section}</p><h1>{title}</h1></div>{children}</div>; }
+export const Heading = WorkspaceHeading;
 export function Field({ label, children }: { label: string; children: ReactNode }) { const id = useId(); return <div className="le-field"><label htmlFor={id}>{label}</label>{Children.map(children, child => isValidElement(child) && typeof child.type === "string" && ["input", "textarea", "select"].includes(child.type) ? cloneElement(child as ReactElement<{ id: string }>, { id }) : child)}</div>; }
 export function Empty({ title, action, onClick }: { title: string; action?: string; onClick?: () => void }) { return <div className="le-empty">{onClick ? <button type="button" className="le-empty-mark" aria-label={action ?? title} onClick={onClick}><Plus size={22} /></button> : <div className="le-empty-mark" aria-hidden="true"><Plus size={22} /></div>}<h3>{title}</h3>{action && <Button onClick={onClick}><Plus size={16} />{action}</Button>}</div>; }
 export function Tabs({ items, active, onChange }: { items: string[]; active: string; onChange: (v: string) => void }) { return <div className="le-tabs" role="tablist">{items.map(item => <button type="button" role="tab" aria-selected={active === item} key={item} onClick={() => onChange(item)}>{item}</button>)}</div>; }

@@ -1,0 +1,16 @@
+const assert=require('node:assert/strict');const fs=require('node:fs');const ts=require('typescript');const Module=require('node:module');const path=require('node:path');
+const file=path.resolve('lib/refinements.ts'),mod=new Module(file,module);mod._compile(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,file);
+const {dailyBudgetSummary,journalRatingStats,generatedImprovementPlans}=mod.exports;
+const data={currency:'ZAR',budgets:[{category:'Food',amount:3000,currency:'ZAR',month:'2026-09'},{category:'Transport',amount:1500,currency:'ZAR',month:'2026-09'}],transactions:[{category:'Food',amount:900,currency:'ZAR',date:'2026-09-10',type:'Expense'},{category:'Food',amount:100,currency:'ZAR',date:'2026-09-21',type:'Expense'},{category:'Transport',amount:50,currency:'ZAR',date:'2026-09-21',type:'Expense'}],dailyBudgetPlans:[{id:'p1',date:'2026-09-21',category:'Food',amount:120,currency:'ZAR',note:'Lunch'}],journalRatings:[1,2,3,4,5].map((rating,i)=>({id:`r${i}`,journalId:`j${i}`,pillar:'Social',rating,date:`2026-09-${String(12+i).padStart(2,'0')}`})).concat([8,7,9,6,8].map((rating,i)=>({id:`n${i}`,journalId:`k${i}`,pillar:'Social',rating,date:`2026-09-${String(17+i).padStart(2,'0')}`}))),improvementPlans:[],assessment:{Social:3,Financial:6}};
+const daily=dailyBudgetSummary(data,'2026-09-21','ZAR');
+assert.equal(Math.round(daily.dailyBudget),360);
+assert.equal(daily.plannedSpending,120);
+assert.equal(daily.actualSpending,150);
+assert.equal(Math.round(daily.remainingToday),90);
+assert.equal(daily.categories.find(c=>c.category==='Transport').actual,50);
+const social=journalRatingStats(data,'Social','2026-09-21');
+assert.equal(social.recentAverage,7.6);
+assert.equal(social.trend,'Improving');
+assert.deepEqual(generatedImprovementPlans(data,'2026-09-21')[0].actions.includes('Add important relationships'),true);
+assert.equal(data.assessment.Social,3);
+console.log('PASS: daily budget uses finance records, journal ratings stay separate, and weak-pillar plans generate.');

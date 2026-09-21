@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { isDemoMode } from "./lib/app-mode";
 
 type CookieToSet = {
   name: string;
@@ -18,6 +19,11 @@ function sessionAwareOptions(request: NextRequest, options: CookieToSet["options
 }
 
 export async function middleware(request: NextRequest) {
+  if (isDemoMode) {
+    const demo = NextResponse.next({ request });
+    demo.headers.set("X-Life-Edit-Mode", "DEMO");
+    return demo;
+  }
   let response = NextResponse.next({ request });
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -30,6 +36,8 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/_next") ||
     request.nextUrl.pathname.startsWith("/icon") ||
     request.nextUrl.pathname.startsWith("/maskable-icon") ||
+    request.nextUrl.pathname.startsWith("/splash-") ||
+    request.nextUrl.pathname === "/offline.html" ||
     request.nextUrl.pathname === "/apple-touch-icon.png" ||
     request.nextUrl.pathname === "/favicon.ico" ||
     request.nextUrl.pathname === "/manifest.webmanifest" ||
