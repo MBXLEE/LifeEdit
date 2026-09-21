@@ -58,7 +58,11 @@
   .le-app[data-sidebar=expanded] .le-sidebar { width:224px; }
   .le-content { padding:28px 24px; }
 }
+<<<<<<< HEAD
 @media(max-width:767px) {
+=======
+@media(max-width:767px), (pointer:coarse) and (max-width:1024px) {
+>>>>>>> bb5731128e5093d25a86a446b5a2f0c4ed091a5a
   :root,[data-theme=ocean] { --background:0 0% 98%;--muted:216 24% 96%; }
   .le-app { display:block; }
   .le-sidebar,.le-sidebar.is-open,.le-sidebar-toggle,.le-scrim { display:none!important; }
@@ -91,9 +95,14 @@
   .le-field { margin:16px 0; }
   .le-field>label,.le-auth .le-field { color:var(--le-muted,hsl(var(--muted-foreground)));font-size:11px;text-transform:uppercase;font-weight:650; }
   .le-app input:not([type=checkbox]):not([type=range]),.le-app textarea,.le-app select,.le-modal input:not([type=checkbox]):not([type=range]),.le-modal textarea,.le-modal select,.le-auth input { font-size:16px;border-radius:15px; }
+<<<<<<< HEAD
   .le-tabs { width:100%;border-radius:16px;flex-shrink:0;display:flex;justify-content:flex-start;gap:6px;padding:6px;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity; }
   .le-tabs::-webkit-scrollbar { display:none; }
   .le-tabs button { flex:0 0 auto;min-height:40px;padding:9px 13px;border-radius:14px;font-size:11px;font-weight:650;scroll-snap-align:start; }
+=======
+  .le-tabs { width:100%;border-radius:16px;flex-shrink:0; }
+  .le-tabs button { flex:1;min-height:36px;padding:8px 10px;border-radius:14px;font-size:12px;font-weight:650; }
+>>>>>>> bb5731128e5093d25a86a446b5a2f0c4ed091a5a
   .le-mobile-nav { display:grid;grid-template-columns:repeat(6,minmax(0,1fr));position:fixed;bottom:0;left:0;right:0;z-index:50;background:hsl(var(--card)/.98);border-top:1px solid hsl(var(--border));padding:7px 8px calc(8px + env(safe-area-inset-bottom)); }
   .le-mobile-nav a { display:flex;align-items:center;justify-content:center;flex-direction:column;gap:3px;font-size:9px;color:var(--le-muted);min-width:0;min-height:52px; }
   .le-nav-icon { width:32px;height:32px;border-radius:50%;display:grid;place-items:center; }
@@ -111,6 +120,7 @@
   .le-content .le-explore a { font-size:12px;min-height:64px; }
   .le-explore svg { flex-shrink:0; }
   .le-undo { bottom:calc(84px + env(safe-area-inset-bottom)); }
+<<<<<<< HEAD
   .le-modal { padding:0;border-radius:24px 24px 0 0;max-height:92dvh;width:100vw;max-width:100vw;margin:auto 0 0;overflow-y:auto;box-shadow:0 -18px 60px #0004; }
   .le-modal h2 { font-size:24px; }
   .le-modal-header { position:sticky;top:0;z-index:4;padding:30px 22px 12px;background:hsl(var(--card));border-bottom:1px solid hsl(var(--border)/.7); }
@@ -120,6 +130,10 @@
   .le-modal form>.le-row:last-child,.le-modal form>button[type=submit]:last-child { position:sticky;bottom:0;z-index:6;margin:20px -22px 0;padding:14px 22px max(14px,env(safe-area-inset-bottom));background:hsl(var(--card));border-top:1px solid hsl(var(--border));box-shadow:0 -16px 30px hsl(var(--background)/.78); }
   .le-modal form>button[type=submit]:last-child { display:flex;width:calc(100% + 44px);justify-content:center;border-radius:0; }
   .le-modal form>.le-row:last-child .le-button:first-child { flex:1;justify-content:center; }
+=======
+  .le-modal { padding:20px;border-radius:20px;max-height:calc(100dvh - 32px); }
+  .le-modal h2 { font-size:24px; }
+>>>>>>> bb5731128e5093d25a86a446b5a2f0c4ed091a5a
   .le-progress { min-width:0;height:6px; }
   .le-table-scroll { overscroll-behavior-x:contain; }
   .le-table-scroll th,.le-table-scroll td { padding:12px 8px;font-size:12px; }
@@ -183,9 +197,14 @@
   .le-calendar-month .le-time-block { padding:4px;border-radius:5px; }
   .le-timer { padding:14px 0;background:none;box-shadow:none; }
   .le-timer:hover { box-shadow:none; }
+<<<<<<< HEAD
   .le-timer-digits { display:grid;place-items:center;width:220px;height:220px;border-radius:50%;border:9px solid hsl(var(--secondary));font-size:50px;margin:12px auto 18px; }
   .le-timer>.le-progress { max-width:220px; }
   .le-timer .le-inline { justify-content:center;width:100%; }
+=======
+  .le-timer-digits { display:grid;place-items:center;width:220px;height:220px;border-radius:50%;border:9px solid hsl(var(--secondary));font-size:50px;margin:12px 0 18px; }
+  .le-timer>.le-progress { max-width:220px; }
+>>>>>>> bb5731128e5093d25a86a446b5a2f0c4ed091a5a
   .le-habit-days { gap:5px;margin-top:16px; }
   .le-habit-days span { height:32px;border-radius:16px; }
   .le-habit-days small { font-size:9px; }
@@ -206,7 +225,11 @@
   .le-grid-four .le-metric { font-size:24px; }
   .le-dashboard-overview .le-ring { width:86px;height:86px; }
 }
+<<<<<<< HEAD
 @media(max-width:767px) {
+=======
+@media(max-width:767px), (pointer:coarse) and (max-width:1024px) {
+>>>>>>> bb5731128e5093d25a86a446b5a2f0c4ed091a5a
   .le-install-prompt { display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 16px;background:hsl(var(--card));border-bottom:1px solid hsl(var(--border)); }
   .le-install-prompt>button:first-child { display:flex;align-items:center;gap:10px;min-height:44px;text-align:left;font-size:13px;font-weight:600; }
   .le-install-prompt img { border-radius:9px; }
@@ -220,9 +243,12 @@
   .le-table-scroll th,.le-table-scroll td { white-space:normal;overflow-wrap:anywhere;padding:10px 5px; }
   .le-content .le-row>div { min-width:0;max-width:100%; }
   .le-app button,.le-app a { touch-action:manipulation; }
+<<<<<<< HEAD
   .le-reminder-grid { grid-template-columns:repeat(2,minmax(0,1fr));align-items:end; }
   .le-reminder-grid .le-field { margin:0; }
   .le-reminder-grid .le-field>label { min-height:24px;display:flex;align-items:flex-end;line-height:1.15; }
+=======
+>>>>>>> bb5731128e5093d25a86a446b5a2f0c4ed091a5a
 }
 @media(display-mode:standalone) { .le-install-prompt { display:none; } }
 
