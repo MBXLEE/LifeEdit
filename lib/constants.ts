@@ -47,6 +47,7 @@ export const navigation = [
 
 export const workspaceNavigation = [
   { href: "/finance", label: "Finance", icon: Landmark },
+  { href: "/budget", label: "Budget", icon: PiggyBank },
   { href: "/fitness", label: "Fitness", icon: Dumbbell },
   { href: "/spiritual", label: "Spiritual", icon: BookOpen },
   { href: "/social", label: "Social", icon: UserRound },

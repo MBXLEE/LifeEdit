@@ -32,7 +32,7 @@ export type LifeData = ExtraData & RefinementData & {
   transactions: { id: string; title: string; category: string; amount: number; type: string; classification?: Classification | ""; currency: string; date: string }[];
   workoutTypes: string[]; workouts: Workout[]; workoutLogs: { id: string; name: string; date: string; minutes: number; volume: number; exercises?: Workout["exercises"]; notes?: string }[];
   focusTypes: string[]; focus: { id: string; name: string; seconds: number; date: string }[];
-  board: { id: string; title: string; url: string; category?: string; notes?: string; goalId?: string }[];
+  board: { id: string; title: string; url: string; category?: string; notes?: string; goalId?: string; kind?: string; target?: number; saved?: number; currency?: string; quote?: string; coachNote?: string }[];
   notificationSettings: NotificationSettings;
 };
 export function emptyData(): LifeData {

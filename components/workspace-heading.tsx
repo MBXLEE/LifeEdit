@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 const titles: Record<string, string> = {
   "/planner": "Planner", "/focus": "Focus", "/journal": "Journal",
-  "/life-edit": "Life Edit", "/insights": "Insights", "/finance": "Finance",
+  "/life-edit": "Life Edit", "/insights": "Insights", "/finance": "Finance", "/budget": "Budget",
   "/fitness": "Gym Planner", "/social": "Relationships", "/habits": "My Habits",
   "/quit-habits": "Breaking Free", "/settings": "Theme Studio", "/spiritual": "Spiritual",
 };
