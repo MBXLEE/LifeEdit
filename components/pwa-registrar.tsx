@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
+import { InstallExperience } from "./pwa-install";
 
 export function PwaRegistrar() {
   useEffect(() => {
-    if (!("serviceWorker" in navigator)) {
+    if (!("serviceWorker" in navigator) || !window.isSecureContext || process.env.NODE_ENV !== "production") {
       return;
     }
 
@@ -13,5 +14,5 @@ export function PwaRegistrar() {
     });
   }, []);
 
-  return null;
+  return <InstallExperience />;
 }

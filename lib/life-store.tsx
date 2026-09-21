@@ -7,13 +7,15 @@ import type { Route } from "next";
 import { advanceFocus, extraDefaults, type ExtraData, type Exercise } from "@/lib/life-domain";
 import { refinementDefaults, type RefinementData, type Classification } from "@/lib/refinements";
 import { defaultNotificationSettings, type NotificationSettings } from "@/lib/notifications";
+import { isDemoMode } from "@/lib/app-mode";
+import { activeDemoProfile, loadDemoWorkspace, saveDemoWorkspace, RESET_KEY, type DemoProfile } from "@/lib/demo-storage";
 
 export const pillars = ["Financial", "Physical", "Mental & Emotional", "Social", "Spiritual", "Personal Growth"];
 export const themeNames = ["Ocean", "Blush", "Sage", "Cream", "Midnight"] as const;
 export type Theme = typeof themeNames[number];
 export const uid = () => crypto.randomUUID();
 export function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
-export const configured = () => Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+export const configured = () => !isDemoMode && Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 export type Goal = { id: string; title: string; horizon: string; parent: string; pillars: string[]; progress: number; archived: boolean; due: string; notes: string };
 export type Habit = { id: string; name: string; direction: "build" | "quit"; dates: string[]; start: string; setbacks: { date: string; note: string }[] };
 export type Task = { id: string; title: string; date: string; time: string; minutes: number; pillar: string; done: boolean };
@@ -76,6 +78,7 @@ export function LifeProvider({ children }: { children: ReactNode }) {
   const [account, setAccount] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const owner = useRef("");
+  const localProfile = useRef<DemoProfile>("demo");
   const revision = useRef(0);
   const dirty = useRef(false);
   const latest = useRef(data);
@@ -88,18 +91,19 @@ export function LifeProvider({ children }: { children: ReactNode }) {
     async function load() {
       try {
         if (configured() && ["/login", "/signup", "/forgot-password", "/reset-password", "/auth/callback"].includes(window.location.pathname)) return;
-        if (configured()) {
+        if (!isDemoMode) {
+          if (!configured()) throw new Error("Production mode requires Supabase configuration. Set APP_MODE=DEMO for local testing.");
           const db = createClient();
           const { data: auth, error: authError } = await db.auth.getUser();
           if (authError || !auth.user) { window.location.replace("/login"); return; }
           owner.current = auth.user.id;
           const { data: row, error: readError } = await db.from("life_workspaces").select("data,revision").eq("user_id", auth.user.id).maybeSingle();
           if (readError) throw readError;
-          const loaded = withDefaults({ ...(row?.data ?? {}), name: row?.data?.name ?? auth.user.user_metadata?.name ?? "" });
+          const loaded = withDefaults({ ...(row?.data ?? {}), name: row?.data?.name ?? auth.user.user_metadata?.name ?? auth.user.user_metadata?.full_name ?? "" });
           if (alive) { revision.current = row?.revision ?? 0; latest.current = loaded; setData(loaded); setAccount(true); setReady(true); setStatus("Saved to your account"); }
         } else {
-          const raw = localStorage.getItem("life-edit-preview-v2");
-          const loaded = raw ? withDefaults(JSON.parse(raw)) : emptyData();
+          localProfile.current = activeDemoProfile();
+          const loaded = withDefaults(loadDemoWorkspace(emptyData(), localProfile.current));
           if (alive) { latest.current = loaded; setData(loaded); setReady(true); setStatus("Saved on this device"); }
         }
       } catch (e) { if (alive) setError(e instanceof Error ? e.message : "Unable to load your workspace. Please retry."); }
@@ -112,7 +116,7 @@ export function LifeProvider({ children }: { children: ReactNode }) {
     document.documentElement.dataset.theme = data.theme.toLowerCase();
     if (!dirty.current) return;
     if (!account) {
-      try { localStorage.setItem("life-edit-preview-v2", JSON.stringify(data)); dirty.current = false; setStatus("Saved on this device"); setError(""); }
+      try { if (!isDemoMode) throw new Error("Local storage is disabled in production."); saveDemoWorkspace(data, localProfile.current); dirty.current = false; setStatus("Saved on this device"); setError(""); }
       catch { setError("Device storage is full or unavailable. Export your data before leaving."); }
       return;
     }
@@ -131,6 +135,17 @@ export function LifeProvider({ children }: { children: ReactNode }) {
     }, 800);
     return () => clearInterval(timer);
   }, [data, ready, account]);
+  useEffect(() => {
+    if (!isDemoMode) return;
+    const reset = (event: StorageEvent) => {
+      if (event.key === RESET_KEY && event.storageArea === localStorage) {
+        dirty.current = false;
+        window.location.replace("/onboarding");
+      }
+    };
+    window.addEventListener("storage", reset);
+    return () => window.removeEventListener("storage", reset);
+  }, []);
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => { if (dirty.current) { event.preventDefault(); event.returnValue = ""; } };
     window.addEventListener("beforeunload", warn);

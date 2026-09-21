@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import { isDemoMode } from "@/lib/app-mode";
+import { DemoBanner, DemoLogin } from "./demo-controls";
 import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { createClient, setAuthPersistence } from "@/lib/supabase/client";
@@ -16,7 +18,7 @@ export function AuthCard({ mode }: { mode: "login" | "signup" | "forgot" | "rese
   useEffect(() => { if (new URLSearchParams(location.search).get("error") === "confirmation") setMessage("That sign-in link is invalid or has expired. Try logging in or request a new reset link."); }, []);
   async function handleAuth() {
     setMessage("");
-    if (!configured()) { setMessage("Account access is not connected yet. You can explore the local preview below."); return; }
+    if (!configured()) { setMessage("Production account access is not configured. Connect Supabase or set APP_MODE=DEMO for local testing."); return; }
     if (mode === "reset" && password !== confirm) { setMessage("Your passwords do not match."); return; }
     setBusy(true);
     try {
@@ -45,6 +47,7 @@ export function AuthCard({ mode }: { mode: "login" | "signup" | "forgot" | "rese
     try { const { error } = await createClient().auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${location.origin}/auth/callback` } }); if (error) throw error; }
     catch (e) { setMessage(e instanceof Error ? e.message : "Google sign-in could not start."); setBusy(false); }
   }
+  if (isDemoMode) return <main className="le-auth"><Link href="/dashboard" className="le-auth-back"><ArrowLeft size={17}/>Back to app</Link><div className="le-auth-body"><p className="le-eyebrow">The Life Edit</p><h1>Your space to explore.</h1><DemoBanner/><DemoLogin/></div></main>;
   return <main className="le-auth"><Link href="/dashboard" className="le-auth-back"><ArrowLeft size={17} />Back</Link><div className="le-auth-body"><p className="le-eyebrow">The Life Edit</p><h1>{title}</h1><p className="le-muted">{mode === "forgot" ? "Enter your email for a password reset link." : mode === "reset" ? "Choose a new password for your account." : "A little more intention. A life that feels like you."}</p><form onSubmit={e => { e.preventDefault(); void handleAuth(); }}>
     {mode === "signup" && <label className="le-field">Your name<input value={name} required autoComplete="name" onChange={e => setName(e.target.value)} /></label>}
     {mode !== "reset" && <label className="le-field">Email address<input type="email" required autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} /></label>}

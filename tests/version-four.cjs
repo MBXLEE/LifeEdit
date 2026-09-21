@@ -10,10 +10,11 @@ const fs=require('node:fs');
  const fill=async(name,value)=>page.getByLabel(name,{exact:true}).fill(String(value));
  const select=async(name,value)=>page.getByLabel(name,{exact:true}).selectOption(value);
  const tab=async name=>page.getByRole('tab',{name,exact:true}).click();
- const saved=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('life-edit-preview-v2')));
+ const saved=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('life-edit-demo-v1')));
  const upload=async()=>{const buffer=await page.screenshot();await page.getByLabel('Upload image',{exact:true}).setInputFiles({name:'progress.png',mimeType:'image/png',buffer});await page.getByRole('dialog').locator('img').waitFor();};
  fs.mkdirSync('test-results',{recursive:true});
  try {
+    await page.addInitScript(()=>{if(!localStorage.getItem('life-edit-demo-v1'))localStorage.setItem('life-edit-demo-v1',JSON.stringify({version:2,tasks:[]}));});
   await visit('/fitness');assert.deepEqual(await page.getByRole('tab').allTextContents(),['Progress','Workouts','Exercise Library','Plans','Settings']);await page.getByText('Current weight',{exact:true}).waitFor();
   await tab('Settings');await fill('Goal weight (kg)',65);await tab('Progress');
   for(const [date,weight,waist] of [['2026-08-01',72,82],['2026-09-01',70,80]]){await click('Add progress entry');await fill('Progress date',date);await fill('Body weight (kg)',weight);await fill('Waist (cm)',waist);await click('Save progress entry');}

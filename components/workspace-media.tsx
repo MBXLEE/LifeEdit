@@ -2,12 +2,13 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useLife } from "@/lib/life-store";
+import { isDemoMode } from "@/lib/app-mode";
 
 function database(): Promise<IDBDatabase> { return new Promise((resolve,reject)=>{const request=indexedDB.open("life-edit-images",1);request.onupgradeneeded=()=>request.result.createObjectStore("images");request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);}); }
 async function saveLocal(file:File) { const db=await database();const key=crypto.randomUUID();await new Promise<void>((resolve,reject)=>{const tx=db.transaction("images","readwrite");tx.objectStore("images").put(file,key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);});db.close();return `local-media:${key}`; }
 async function imageUrl(source:string) {
   if(source.startsWith("local-media:")){const db=await database();const blob=await new Promise<Blob>((resolve,reject)=>{const r=db.transaction("images").objectStore("images").get(source.slice(12));r.onsuccess=()=>r.result?resolve(r.result):reject(new Error("Image is unavailable on this device."));r.onerror=()=>reject(r.error);});db.close();return URL.createObjectURL(blob);}
-  if(source.startsWith("private-media:")){const {data,error}=await createClient().storage.from("vision-board").createSignedUrl(source.slice(14),3600);if(error)throw error;return data.signedUrl;}
+  if(source.startsWith("private-media:")){if(isDemoMode)throw new Error("Private media requires production mode.");const {data,error}=await createClient().storage.from("vision-board").createSignedUrl(source.slice(14),3600);if(error)throw error;return data.signedUrl;}
   if(source.startsWith("https://"))return source;
   throw new Error("No image selected");
 }

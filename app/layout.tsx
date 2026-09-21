@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import type { Viewport } from "next";
 import "./globals.css";
+import "./mobile-workspace.css";
 import { AppShell } from "@/components/app-shell";
 import { PwaRegistrar } from "@/components/pwa-registrar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { NotificationManager } from "@/components/notification-manager";
 import { LifeProvider } from "@/lib/life-store";
+import { PwaSplashLinks } from "@/components/pwa-splash-links";
 
 export const metadata: Metadata = {
   applicationName: "LifeEdit",
@@ -41,6 +43,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head><PwaSplashLinks /></head>
       <body>
         <PwaRegistrar />
         <ThemeProvider>

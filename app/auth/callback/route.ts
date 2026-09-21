@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/app-mode";
 export async function GET(request: Request) {
   const url = new URL(request.url);
+  if (isDemoMode) return NextResponse.redirect(new URL("/dashboard", url.origin));
   const code = url.searchParams.get("code");
   if (code) {
     const db = await createClient();
