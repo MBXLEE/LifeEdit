@@ -67,7 +67,8 @@
   .le-sidebar-head { margin-bottom:22px;align-items:center; }
   .le-sidebar .le-brand { font-size:21px; }
   .le-sidebar .le-brand>span { width:42px;height:42px;border-radius:16px; }
-  .le-drawer-close { display:grid; }
+  .le-sidebar .le-drawer-close { display:none; }
+  .le-sidebar.is-open .le-drawer-close { display:grid; }
   .le-nav-group { margin:18px 12px 8px;color:hsl(var(--primary)); }
   .le-sidebar nav { padding-bottom:16px; }
   .le-sidebar nav a { min-height:46px;border-radius:15px;margin-bottom:5px;padding:12px 13px; }
