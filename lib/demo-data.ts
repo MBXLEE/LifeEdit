@@ -1,9 +1,11 @@
 import type { LifeData } from "./life-store";
 import { localDate } from "./life-domain";
+import { paydayCycleForDate } from "./refinements";
 
 export function createDemoData(base: LifeData, now = new Date()): LifeData {
   const date = (offset = 0) => { const d = new Date(now); d.setDate(d.getDate() + offset); return localDate(d.getTime()); };
-  const month = date().slice(0, 7);
+  const cycle = paydayCycleForDate(date(), base.financeSettings?.payday ?? 25);
+  const month = cycle.budgetMonth;
   const assessment = Object.fromEntries(base.areas.map((area, i) => [area, [7, 8, 6, 7, 8, 7][i] ?? 7]));
   const exercise = { ...base.exercises[0], id: "demo-exercise", name: "Bench Press", sets: 3, reps: 10, weight: 20, rest: 60, seconds: 0, notes: "Adjust the plan to your own routine." };
   return {
@@ -33,8 +35,8 @@ export function createDemoData(base: LifeData, now = new Date()): LifeData {
       { id: "demo-goal-2", title: "Move three times a week", horizon: "Monthly", parent: "", pillars: ["Physical"], progress: 50, archived: false, due: date(30), notes: "Choose activities I enjoy." },
     ],
     transactions: [
-      { id: "demo-income", title: "Demo salary", type: "Income", category: "Income", amount: 28000, currency: "ZAR", date: `${month}-01` },
-      { id: "demo-rent", title: "Rent", type: "Expense", classification: "Need", category: "Housing", amount: 8500, currency: "ZAR", date: `${month}-01` },
+      { id: "demo-income", title: "Demo salary", type: "Income", category: "Income", amount: 28000, currency: "ZAR", date: cycle.start },
+      { id: "demo-rent", title: "Rent", type: "Expense", classification: "Need", category: "Housing", amount: 8500, currency: "ZAR", date: cycle.start },
       { id: "demo-food", title: "Weekly groceries", type: "Expense", classification: "Need", category: "Food", amount: 650, currency: "ZAR", date: date() },
       { id: "demo-saving", title: "Emergency fund contribution", type: "Savings", classification: "Savings", category: "Savings", amount: 2000, currency: "ZAR", date: date() },
     ],

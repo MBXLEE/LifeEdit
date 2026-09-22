@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import { BrainCircuit, Gem, ImagePlus, Palette, Plane, Plus, Quote, Sparkles } from "lucide-react";
 import { useLife, uid, type LifeData } from "@/lib/life-store";
-import { Button, Empty, Field, Modal, RecordActions } from "./workspace-ui";
+import { Button, Empty, Field, Modal, RecordActions, SaveButton } from "./workspace-ui";
 import { CategoryManager } from "./record-manager";
 import { ImageUpload, MediaImage } from "./workspace-media";
 
@@ -126,8 +126,8 @@ export function VisionWorkspace() {
       <Field label="Vision statement or quote"><textarea rows={3} value={draft.quote ?? ""} onChange={e => setDraft({ ...draft, quote: e.target.value })} placeholder="My future self deserves this." /></Field>
       <Field label="Motivation notes"><textarea rows={4} value={draft.notes ?? ""} onChange={e => setDraft({ ...draft, notes: e.target.value })} placeholder="Why this dream matters to you." /></Field>
       <div className="le-grid-two">
-        <Field label="Target amount"><input type="number" min="0" value={draft.target ?? 0} onChange={e => setDraft({ ...draft, target: Number(e.target.value) })} /></Field>
-        <Field label="Saved so far"><input type="number" min="0" value={draft.saved ?? 0} onChange={e => setDraft({ ...draft, saved: Number(e.target.value) })} /></Field>
+        <Field label="Target amount"><input type="number" min="0" value={Number(draft.target ?? 0) > 0 ? draft.target : ""} placeholder="0" onChange={e => setDraft({ ...draft, target: e.target.value === "" ? 0 : Number(e.target.value) })} /></Field>
+        <Field label="Saved so far"><input type="number" min="0" value={Number(draft.saved ?? 0) > 0 ? draft.saved : ""} placeholder="0" onChange={e => setDraft({ ...draft, saved: e.target.value === "" ? 0 : Number(e.target.value) })} /></Field>
       </div>
       <Field label="Currency"><select value={draft.currency ?? data.currency} onChange={e => setDraft({ ...draft, currency: e.target.value })}>{data.currencies.map(c => <option key={c.code} value={c.code}>{c.code} · {c.name}</option>)}</select></Field>
       <Field label="Future goal"><select value={draft.goalId ?? ""} onChange={e => setDraft({ ...draft, goalId: e.target.value })}><option value="">No linked goal</option>{data.goals.filter(g => !g.archived || g.id === draft.goalId).map(g => <option key={g.id} value={g.id}>{g.title}</option>)}</select></Field>
@@ -135,7 +135,7 @@ export function VisionWorkspace() {
       <ImageUpload value={draft.url} onBusy={setUploading} onChange={url => setDraft(d => d ? { ...d, url } : d)} />
       <Field label="Or image URL (https)"><input type="url" pattern="https://.*" value={draft.url.startsWith("https://") ? draft.url : ""} onChange={e => setDraft({ ...draft, url: e.target.value })} /></Field>
       {draft.url && <Button secondary onClick={() => setDraft({ ...draft, url: "" })}><ImagePlus size={16} />Remove image</Button>}
-      <Button type="submit" disabled={uploading}>Save vision item</Button>
+      <SaveButton disabled={uploading}>Save vision item</SaveButton>
     </form></Modal>}
   </section>;
 }

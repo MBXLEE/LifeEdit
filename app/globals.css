@@ -263,6 +263,8 @@
 [data-theme="midnight"] .le-modal { background:linear-gradient(135deg,rgba(31,41,62,.98),rgba(18,26,42,.98) 58%,rgba(38,32,58,.96));border-color:rgba(174,193,223,.2);box-shadow:0 34px 100px rgba(0,0,0,.56),inset 0 1px 0 rgba(255,255,255,.09); }
 [data-theme="midnight"] .le-modal::before { background:linear-gradient(112deg,transparent 0 50%,rgba(255,255,255,.08) 50% 51.5%,transparent 51.5%),linear-gradient(180deg,rgba(123,181,230,.08),transparent 38%); }
 [data-theme="midnight"] .le-modal-header,[data-theme="midnight"] .le-modal form>.le-row:last-child,[data-theme="midnight"] .le-modal form>button[type=submit]:last-child { background:linear-gradient(180deg,rgba(30,40,61,.86),rgba(18,26,42,.92));border-color:rgba(174,193,223,.14); }
+[data-theme="midnight"] .le-payday-card { background:linear-gradient(135deg,rgba(33,45,68,.96),rgba(21,31,49,.94) 50%,rgba(46,39,68,.88));border-color:rgba(160,180,212,.2);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 18px 44px rgba(0,0,0,.25); }
+[data-theme="midnight"] .le-payday-daily { background:rgba(18,26,42,.7);border-color:rgba(160,180,212,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.06); }
 .le-metric { font:40px/1.3 Georgia,serif;margin:12px 0;overflow-wrap:anywhere; }.le-metric small { font-size:18px;color:var(--le-muted); }
 .le-board-image { width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:14px; }
 .le-notebook { padding:30px 0;border-top:1px solid hsl(var(--border)); }.le-prompt { font:23px/1.5 Georgia,serif;margin-bottom:22px; }
@@ -402,6 +404,15 @@
 .le-rating-sparkline span { flex:1;min-width:8px;border-radius:999px 999px 4px 4px;background:linear-gradient(180deg,hsl(var(--primary)),hsl(var(--accent)));box-shadow:0 7px 14px hsl(var(--primary)/.14);transition:height .35s ease; }
 .le-compact-metrics { gap:10px; }
 .le-budget-over { display:block;margin-top:6px;color:#a84f59;font-size:11px;font-weight:750; }
+.le-payday-card { display:grid;grid-template-columns:minmax(0,1.35fr) auto minmax(160px,.6fr);gap:18px;align-items:center;position:relative;overflow:hidden;background:linear-gradient(135deg,hsl(var(--card)),color-mix(in srgb,hsl(var(--secondary)) 32%,hsl(var(--card))) 48%,color-mix(in srgb,hsl(var(--accent)) 22%,hsl(var(--card))));border:1px solid hsl(var(--border)/.76);box-shadow:0 22px 54px rgba(38,48,62,.08),inset 0 1px 0 #fff; }
+.le-payday-card::before { content:"";position:absolute;inset:0;background:linear-gradient(112deg,transparent 0 45%,rgba(255,255,255,.52) 45% 46.5%,transparent 46.5%);pointer-events:none; }
+.le-payday-card>* { position:relative;z-index:1; }
+.le-payday-card h2 { font-size:32px; }
+.le-payday-countdown { display:grid;place-items:center;min-width:128px;aspect-ratio:1;border-radius:28px;background:linear-gradient(145deg,hsl(var(--primary)),color-mix(in srgb,hsl(var(--primary)) 72%,#d8bd82));color:hsl(var(--primary-foreground));box-shadow:0 20px 42px hsl(var(--primary)/.18),inset 0 1px 0 #ffffff8a;text-align:center;padding:16px; }
+.le-payday-countdown strong { font:50px/1 Georgia,serif; }
+.le-payday-countdown span,.le-payday-daily span { display:block;font-size:11px;font-weight:800;text-transform:uppercase; }
+.le-payday-daily { padding:16px 18px;border-radius:20px;background:hsl(var(--card)/.68);border:1px solid hsl(var(--border)/.62);box-shadow:inset 0 1px 0 #fff; }
+.le-payday-daily strong { display:block;margin-top:6px;font:26px/1.12 Georgia,serif;overflow-wrap:anywhere; }
 .le-budget-guidance { position:relative;overflow:hidden;background:linear-gradient(135deg,hsl(var(--card)),color-mix(in srgb,hsl(var(--secondary)) 34%,hsl(var(--card))) 58%,#fff7e8);border:1px solid hsl(var(--border)/.78);box-shadow:0 20px 48px rgba(38,48,62,.075),inset 0 1px 0 #fff; }
 .le-budget-guidance>* { position:relative;z-index:1; }
 .le-budget-health { display:inline-flex;align-items:center;min-height:34px;padding:8px 12px;border-radius:999px;background:hsl(var(--card)/.78);box-shadow:inset 0 1px 0 #fff,0 8px 20px rgba(37,49,63,.06);font-size:12px;font-weight:800; }
@@ -417,7 +428,8 @@
 .le-budget-goals { margin-top:12px; }
 .le-budget-goals .le-inline { gap:8px; }
 .le-budget-goals .le-inline span { display:inline-flex;padding:8px 10px;border-radius:999px;background:hsl(var(--secondary)/.82);color:hsl(var(--secondary-foreground));font-weight:650; }
-.le-modal form>button[type=submit]:last-child.le-compact-save { width:auto;min-width:150px;margin:22px 28px 24px auto;padding:11px 20px;border-radius:999px;background:linear-gradient(135deg,hsl(var(--primary)),color-mix(in srgb,hsl(var(--primary)) 76%,#d8bd82));box-shadow:0 16px 34px hsl(var(--primary)/.2),inset 0 1px 0 #ffffff61; }
+.le-button.le-compact-save,.le-modal form>button[type=submit]:last-child.le-compact-save { width:auto;min-width:150px;min-height:42px;padding:11px 20px;border-radius:999px;background:linear-gradient(135deg,hsl(var(--primary)),color-mix(in srgb,hsl(var(--primary)) 76%,#d8bd82));box-shadow:0 16px 34px hsl(var(--primary)/.2),inset 0 1px 0 #ffffff61; }
+.le-modal form>button[type=submit]:last-child.le-compact-save { margin:22px 28px 24px auto; }
 .le-kpi-grid { gap:14px; }
 .le-kpi-grid .le-card { position:relative;overflow:hidden;min-height:134px;border-radius:28px;background:linear-gradient(145deg,hsl(var(--card)/.92),color-mix(in srgb,hsl(var(--secondary)) 28%,hsl(var(--card))));border:1px solid hsl(var(--border)/.72);box-shadow:inset 0 1px 0 #fff,0 18px 44px rgba(36,48,62,.07); }
 .le-kpi-grid .le-card::after { content:"";position:absolute;right:-36px;top:-54px;width:140px;height:140px;border-radius:50%;background:hsl(var(--card)/.62);pointer-events:none; }
