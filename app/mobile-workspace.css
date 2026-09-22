@@ -237,6 +237,22 @@
   .le-reminder-grid { grid-template-columns:repeat(2,minmax(0,1fr));align-items:end; }
   .le-reminder-grid .le-field { margin:0; }
   .le-reminder-grid .le-field>label { min-height:24px;display:flex;align-items:flex-end;line-height:1.15; }
+  [data-theme="midnight"] { --background:224 36% 8%;--muted:224 24% 17%; }
+  [data-theme="midnight"] .le-content { max-width:560px; }
+  [data-theme="midnight"] .le-topbar { background:rgba(13,19,31,.82);border-bottom:1px solid rgba(156,174,203,.12);box-shadow:0 10px 28px rgba(0,0,0,.18); }
+  [data-theme="midnight"] .le-sidebar { background:linear-gradient(180deg,#1a2438,#121928);box-shadow:28px 0 80px rgba(0,0,0,.38); }
+  [data-theme="midnight"] .le-mobile-nav { background:rgba(18,25,39,.97);border-color:rgba(156,174,203,.16);box-shadow:0 -18px 42px rgba(0,0,0,.28); }
+  [data-theme="midnight"] .le-mobile-nav a[aria-current] .le-nav-icon { background:rgba(125,167,216,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.08); }
+  [data-theme="midnight"] .le-card,[data-theme="midnight"] .le-feature-link { background:linear-gradient(135deg,rgba(30,40,61,.95),rgba(24,31,49,.92) 52%,rgba(43,37,64,.86));border:1px solid rgba(160,180,212,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 16px 42px rgba(0,0,0,.22); }
+  [data-theme="midnight"] .le-grid-four .le-card:nth-child(4n+1),
+  [data-theme="midnight"] .le-grid-four .le-card:nth-child(4n+2),
+  [data-theme="midnight"] .le-grid-four .le-card:nth-child(4n+3),
+  [data-theme="midnight"] .le-grid-four .le-card:nth-child(4n+4) { background:linear-gradient(135deg,rgba(31,42,65,.95),rgba(25,33,51,.92) 55%,rgba(38,36,58,.86)); }
+  [data-theme="midnight"] .le-theme-grid button { background:linear-gradient(135deg,rgba(31,42,65,.95),rgba(22,30,48,.94));border-color:rgba(160,180,212,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 14px 34px rgba(0,0,0,.2); }
+  [data-theme="midnight"] .le-theme-grid button[aria-pressed=true] { background:linear-gradient(135deg,rgba(55,75,110,.95),rgba(27,39,62,.94)); }
+  [data-theme="midnight"] .le-modal { background:linear-gradient(135deg,rgba(31,41,62,.98),rgba(18,26,42,.98) 58%,rgba(38,32,58,.96));border-color:rgba(174,193,223,.2);box-shadow:0 -24px 80px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.09); }
+  [data-theme="midnight"] .le-modal-header,[data-theme="midnight"] .le-modal form>.le-row:last-child,[data-theme="midnight"] .le-modal form>button[type=submit]:last-child { background:linear-gradient(180deg,rgba(30,40,61,.9),rgba(18,26,42,.96));border-color:rgba(174,193,223,.14); }
+  [data-theme="midnight"] .le-install-prompt { background:rgba(18,25,39,.96);border-color:rgba(156,174,203,.16); }
 }
 @media(display-mode:standalone) { .le-install-prompt { display:none; } }
 
