@@ -6,7 +6,7 @@ import { isDemoMode } from "@/lib/app-mode";
 
 function database(): Promise<IDBDatabase> { return new Promise((resolve,reject)=>{const request=indexedDB.open("life-edit-images",1);request.onupgradeneeded=()=>request.result.createObjectStore("images");request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);}); }
 async function saveLocal(file:File) { const db=await database();const key=crypto.randomUUID();await new Promise<void>((resolve,reject)=>{const tx=db.transaction("images","readwrite");tx.objectStore("images").put(file,key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);});db.close();return `local-media:${key}`; }
-async function imageUrl(source:string) {
+export async function resolveMediaUrl(source:string) {
   if(source.startsWith("local-media:")){const db=await database();const blob=await new Promise<Blob>((resolve,reject)=>{const r=db.transaction("images").objectStore("images").get(source.slice(12));r.onsuccess=()=>r.result?resolve(r.result):reject(new Error("Image is unavailable on this device."));r.onerror=()=>reject(r.error);});db.close();return URL.createObjectURL(blob);}
   if(source.startsWith("private-media:")){if(isDemoMode)throw new Error("Private media requires production mode.");const {data,error}=await createClient().storage.from("vision-board").createSignedUrl(source.slice(14),3600);if(error)throw error;return data.signedUrl;}
   if(source.startsWith("https://"))return source;
@@ -14,7 +14,7 @@ async function imageUrl(source:string) {
 }
 export function MediaImage({source,alt}:{source:string;alt:string}) {
   const [url,setUrl]=useState("");const [error,setError]=useState("");
-  useEffect(()=>{let active=true;let current="";setUrl("");setError("");imageUrl(source).then(value=>{current=value;if(active)setUrl(value);else if(value.startsWith("blob:"))URL.revokeObjectURL(value);}).catch(()=>{if(active)setError("Image unavailable");});return()=>{active=false;if(current.startsWith("blob:"))URL.revokeObjectURL(current);};},[source]);
+  useEffect(()=>{let active=true;let current="";setUrl("");setError("");resolveMediaUrl(source).then(value=>{current=value;if(active)setUrl(value);else if(value.startsWith("blob:"))URL.revokeObjectURL(value);}).catch(()=>{if(active)setError("Image unavailable");});return()=>{active=false;if(current.startsWith("blob:"))URL.revokeObjectURL(current);};},[source]);
   return url?<img className="le-board-image" src={url} alt={alt} onError={()=>{setError("Image unavailable");setUrl("");}}/>:<div className="le-image-placeholder">{error||"Loading image..."}</div>;
 }
 export function ImageUpload({value,onChange,onBusy}:{value:string;onChange:(source:string)=>void;onBusy?:(busy:boolean)=>void}) {

@@ -8,26 +8,28 @@ export type PillarStyle = { pillar: string; color: string; subcategories: Pillar
 export type JournalRating = { id: string; journalId: string; pillar: string; rating: number; date: string };
 export type ImprovementPlan = { id: string; pillar: string; score: number; createdAt: string; actions: string[] };
 export type FinanceSettings = { payday: number; payFrequency: "Monthly" };
+export type SpendingLimits = { daily: number; weekly: number; categories: Record<string, number> };
 export type RefinementData = {
   goalWeight: number | null;
   financeSettings: FinanceSettings;
   fitnessPhotos: { id: string; date: string; title: string; image: string; notes: string }[];
   relationshipTypes: string[]; visionCategories: string[]; reviews: Review[];
   pillarStyles: PillarStyle[];
+  spendingLimits: SpendingLimits;
   dailyBudgetPlans: DailyBudgetPlan[]; weeklyBudgetPlans: WeeklyBudgetPlan[]; journalRatings: JournalRating[]; improvementPlans: ImprovementPlan[];
   reviewSchedule: { frequency: "Weekly" | "Monthly" | "Quarterly"; enabled: boolean; start: string };
 };
 export function refinementDefaults(): RefinementData {
-  return { goalWeight: null, financeSettings: { payday: 25, payFrequency: "Monthly" }, fitnessPhotos: [], relationshipTypes: ["Family", "Friends", "Romantic", "Professional", "Mentors"], visionCategories: ["Career", "Health", "Fitness", "Relationships", "Finance", "Travel", "Spiritual Life", "Personal Growth"], reviews: [], pillarStyles: defaultPillarStyles(), dailyBudgetPlans: [], weeklyBudgetPlans: [], journalRatings: [], improvementPlans: [], reviewSchedule: { frequency: "Monthly", enabled: true, start: "" } };
+  return { goalWeight: null, financeSettings: { payday: 25, payFrequency: "Monthly" }, fitnessPhotos: [], relationshipTypes: ["Family", "Friends", "Romantic", "Professional", "Mentors"], visionCategories: ["Career", "Health", "Fitness", "Relationships", "Finance", "Travel", "Spiritual Life", "Personal Growth"], reviews: [], pillarStyles: defaultPillarStyles(), spendingLimits: { daily: 0, weekly: 0, categories: {} }, dailyBudgetPlans: [], weeklyBudgetPlans: [], journalRatings: [], improvementPlans: [], reviewSchedule: { frequency: "Monthly", enabled: true, start: "" } };
 }
 export function defaultPillarStyles(): PillarStyle[] {
   return [
-    { pillar: "Financial", color: "#8b5cf6", subcategories: [{ id: "financial-budgeting", name: "Budgeting", color: "#c4b5fd" }, { id: "financial-saving", name: "Saving", color: "#a78bfa" }, { id: "financial-investing", name: "Investing", color: "#7c3aed" }] },
-    { pillar: "Physical", color: "#16a34a", subcategories: [{ id: "physical-exercise", name: "Exercise", color: "#86efac" }, { id: "physical-gym", name: "Gym", color: "#15803d" }, { id: "physical-nutrition", name: "Nutrition", color: "#a7f3d0" }] },
-    { pillar: "Mental & Emotional", color: "#0ea5e9", subcategories: [{ id: "mental-reflection", name: "Reflection", color: "#7dd3fc" }, { id: "mental-therapy", name: "Therapy", color: "#38bdf8" }, { id: "mental-rest", name: "Rest", color: "#bae6fd" }] },
+    { pillar: "Financial", color: "#16a34a", subcategories: [{ id: "financial-budgeting", name: "Budgeting", color: "#86efac" }, { id: "financial-saving", name: "Saving", color: "#22c55e" }, { id: "financial-investing", name: "Investing", color: "#15803d" }] },
+    { pillar: "Physical", color: "#2563eb", subcategories: [{ id: "physical-exercise", name: "Exercise", color: "#93c5fd" }, { id: "physical-gym", name: "Gym", color: "#3b82f6" }, { id: "physical-nutrition", name: "Nutrition", color: "#1d4ed8" }] },
+    { pillar: "Mental & Emotional", color: "#9333ea", subcategories: [{ id: "mental-reflection", name: "Reflection", color: "#d8b4fe" }, { id: "mental-therapy", name: "Therapy", color: "#a855f7" }, { id: "mental-rest", name: "Rest", color: "#7e22ce" }] },
     { pillar: "Social", color: "#ec4899", subcategories: [{ id: "social-family", name: "Family", color: "#f9a8d4" }, { id: "social-friends", name: "Friends", color: "#f472b6" }, { id: "social-connection", name: "Connection", color: "#db2777" }] },
-    { pillar: "Spiritual", color: "#6366f1", subcategories: [{ id: "spiritual-prayer", name: "Prayer", color: "#a5b4fc" }, { id: "spiritual-service", name: "Service", color: "#818cf8" }, { id: "spiritual-study", name: "Study", color: "#4f46e5" }] },
-    { pillar: "Personal Growth", color: "#d99b12", subcategories: [{ id: "growth-academic", name: "Academic", color: "#fde68a" }, { id: "growth-reading", name: "Reading", color: "#facc15" }, { id: "growth-skill-development", name: "Skill Development", color: "#f59e0b" }, { id: "growth-courses", name: "Courses", color: "#b45309" }] },
+    { pillar: "Spiritual", color: "#0d9488", subcategories: [{ id: "spiritual-prayer", name: "Prayer", color: "#5eead4" }, { id: "spiritual-service", name: "Service", color: "#14b8a6" }, { id: "spiritual-study", name: "Study", color: "#0f766e" }] },
+    { pillar: "Personal Growth", color: "#eab308", subcategories: [{ id: "growth-study-session", name: "Study Session", color: "#a16207" }, { id: "growth-reading", name: "Reading", color: "#fde68a" }, { id: "growth-skill-development", name: "Skill Development", color: "#facc15" }, { id: "growth-course-work", name: "Course Work", color: "#d97706" }] },
     { pillar: "Career", color: "#2563eb", subcategories: [{ id: "career-deep-work", name: "Deep Work", color: "#93c5fd" }, { id: "career-learning", name: "Learning", color: "#60a5fa" }, { id: "career-admin", name: "Admin", color: "#1d4ed8" }] },
     { pillar: "Health", color: "#22c55e", subcategories: [{ id: "health-walking", name: "Walking", color: "#bbf7d0" }, { id: "health-nutrition", name: "Nutrition", color: "#86efac" }, { id: "health-recovery", name: "Recovery", color: "#4ade80" }] },
     { pillar: "Relationships", color: "#f472b6", subcategories: [{ id: "relationships-family", name: "Family", color: "#fbcfe8" }, { id: "relationships-friends", name: "Friends", color: "#f9a8d4" }, { id: "relationships-date-night", name: "Date Night", color: "#ec4899" }] },
@@ -146,8 +148,10 @@ export function budgetGuidanceSummary(data:LifeData,date:string,currency=data.cu
   const plannedWeeks=data.weeklyBudgetPlans.filter(p=>p.currency===currency&&p.month===month);
   const amountForWeek=(week:{start:string;end:string})=>plannedWeeks.find(p=>p.weekStart===week.start&&p.weekEnd===week.end)?.amount ?? fallbackEnvelopeBudget;
   const currentMonthWeek=monthWeeks.find(week=>date>=week.start&&date<=week.end);
-  const weeklyBudget=currentMonthWeek?amountForWeek(currentMonthWeek):fallbackEnvelopeBudget;
-  const dailyTarget=Math.max(0,monthlyRemaining)/Math.max(1,cycle.daysUntilPayday || 1);
+  const systemWeeklyBudget=currentMonthWeek?amountForWeek(currentMonthWeek):fallbackEnvelopeBudget;
+  const weeklyBudget=data.spendingLimits?.weekly>0?data.spendingLimits.weekly:systemWeeklyBudget;
+  const systemDailyTarget=Math.max(0,monthlyRemaining)/Math.max(1,cycle.daysUntilPayday || 1);
+  const dailyTarget=data.spendingLimits?.daily>0?data.spendingLimits.daily:systemDailyTarget;
   const weekRemaining=weeklyBudget-weeklySpent;
   const todayRemaining=dailyTarget-todaySpent-plannedToday;
   const tomorrow=addDays(date,1);
@@ -167,10 +171,10 @@ export function budgetGuidanceSummary(data:LifeData,date:string,currency=data.cu
     const rows=monthRows.filter(t=>t.date>=week.start&&t.date<=week.end&&budgetedCategories.has(t.category));
     const spent=rows.reduce((s,t)=>s+t.amount,0);
     const scheduled=rows.filter(t=>t.date>date).reduce((s,t)=>s+t.amount,0);
-    const budget=amountForWeek(week);
-    return {...week,budget,spent,scheduled,remaining:budget-spent,recommendedDaily:budget/Math.max(1,daysBetween(week.start,week.end)+1)};
+    const budget=week.start===currentMonthWeek?.start?weeklyBudget:amountForWeek(week);
+    return {...week,budget,systemBudget:amountForWeek(week),spent,scheduled,remaining:budget-spent,recommendedDaily:budget/Math.max(1,daysBetween(week.start,week.end)+1)};
   });
-  return {date,currency,month,budgetMonth:month,cycleStart:cycle.start,cycleEnd:cycle.end,nextPayday:cycle.nextPayday,payday:cycle.payday,daysUntilPayday:cycle.daysUntilPayday,periodDays:cycle.periodDays,weekStart:start,weekEnd:end,monthlyBudget,monthlySpent,monthlyRemaining,weeklyBudget,weeklySpent,weekRemaining,dailyTarget,todaySpent,plannedToday,todayRemaining,tomorrowSuggested,health,insight,projectedMonthEnd,weekSavings,goalProgress,spendingVelocity,breathingRoom:monthlyRemaining,weekEnvelopes};
+  return {date,currency,month,budgetMonth:month,cycleStart:cycle.start,cycleEnd:cycle.end,nextPayday:cycle.nextPayday,payday:cycle.payday,daysUntilPayday:cycle.daysUntilPayday,periodDays:cycle.periodDays,weekStart:start,weekEnd:end,monthlyBudget,monthlySpent,monthlyRemaining,weeklyBudget,systemWeeklyBudget,weeklySpent,weekRemaining,dailyTarget,systemDailyTarget,todaySpent,plannedToday,todayRemaining,tomorrowSuggested,health,insight,projectedMonthEnd,weekSavings,goalProgress,spendingVelocity,breathingRoom:monthlyRemaining,weekEnvelopes};
 }
 export function journalRatingStats(data:LifeData,pillar:string,date:string) {
   const rows=data.journalRatings.filter(r=>r.pillar===pillar&&r.date<=date).sort((a,b)=>a.date.localeCompare(b.date));

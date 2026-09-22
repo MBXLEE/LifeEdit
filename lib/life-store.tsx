@@ -54,7 +54,7 @@ function withDefaults(raw: Partial<LifeData>): LifeData {
     categories: { ...base.notificationSettings.categories, ...raw.notificationSettings.categories },
     reminderTimes: { ...base.notificationSettings.reminderTimes, ...raw.notificationSettings.reminderTimes }
   } : base.notificationSettings;
-  return { ...base, ...raw, notificationSettings };
+  return { ...base, ...raw, spendingLimits: { ...base.spendingLimits, ...raw.spendingLimits, categories: { ...base.spendingLimits.categories, ...raw.spendingLimits?.categories } }, notificationSettings };
 }
 type Store = { data: LifeData; update: (fn: (data: LifeData) => LifeData) => void; ready: boolean; status: string; error: string; retry: () => void; account: boolean; back: () => void; undo: () => void; undoLabel: string; dismissUndo: () => void; offerUndo: (label: string, restore: (data: LifeData) => LifeData) => void };
 const Context = createContext<Store | null>(null);

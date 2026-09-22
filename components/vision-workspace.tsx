@@ -1,10 +1,10 @@
 "use client";
 import { useMemo, useState } from "react";
-import { BrainCircuit, Gem, ImagePlus, Palette, Plane, Plus, Quote, Sparkles } from "lucide-react";
+import { BrainCircuit, Download, Gem, ImagePlus, Palette, Plane, Plus, Quote, Sparkles } from "lucide-react";
 import { useLife, uid, type LifeData } from "@/lib/life-store";
 import { Button, Empty, Field, Modal, RecordActions, SaveButton } from "./workspace-ui";
 import { CategoryManager } from "./record-manager";
-import { ImageUpload, MediaImage } from "./workspace-media";
+import { ImageUpload, MediaImage, resolveMediaUrl } from "./workspace-media";
 
 type BoardItem = LifeData["board"][number];
 
@@ -74,6 +74,8 @@ export function VisionWorkspace() {
   const [category, setCategory] = useState("All");
   const [settings, setSettings] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"png"|"jpeg">("png");
+  const [exportStatus, setExportStatus] = useState("");
   const categories = useMemo(() => ["All", ...new Set([...data.visionCategories, ...data.board.map(b => b.category ?? "Other")])], [data.board, data.visionCategories]);
   const visible = data.board.filter(b => category === "All" || (b.category ?? "Other") === category);
   const savingsDream = data.savingsGoals.find(g => !g.archived) ?? null;
@@ -83,6 +85,63 @@ export function VisionWorkspace() {
   const closer = savingsDream ? money(savingsDream.saved, savingsDream.currency) : money(savedTotal, data.currency);
   const add = (kind = "Dream") => setDraft({ id: uid(), title: "", url: "", notes: "", category: data.visionCategories.includes(kind) ? kind : data.visionCategories[0] ?? "Dreams", goalId: "", kind, target: 0, saved: 0, currency: data.currency, quote: "", coachNote: "" });
   const coach = featured?.coachNote || (savingsDream ? `At this pace, every contribution is turning ${savingsDream.title} from a someday idea into a dated plan.` : "Choose one small money move today and let it serve the version of you on this board.");
+  const loadImage = async (source: string) => {
+    if (!source) return null;
+    try {
+      const url = await resolveMediaUrl(source);
+      return await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        image.crossOrigin = "anonymous";
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error("Image unavailable"));
+        image.src = url;
+      });
+    } catch { return null; }
+  };
+  const wrap = (ctx: CanvasRenderingContext2D, text: string, x: number, y: number, width: number, lineHeight: number, maxLines: number) => {
+    const words = text.split(/\s+/).filter(Boolean); let line = ""; let lines = 0;
+    for (const word of words) {
+      const test = line ? `${line} ${word}` : word;
+      if (ctx.measureText(test).width > width && line) { ctx.fillText(line, x, y); y += lineHeight; line = word; lines += 1; if (lines >= maxLines - 1) break; }
+      else line = test;
+    }
+    if (line && lines < maxLines) ctx.fillText(line, x, y);
+  };
+  async function exportBoard() {
+    if (!data.board.length) { setExportStatus("Add at least one vision item before exporting."); return; }
+    setExportStatus("Creating collage...");
+    const items = data.board.slice(0, 9);
+    const canvas = document.createElement("canvas"); canvas.width = 1440; canvas.height = 1920;
+    const ctx = canvas.getContext("2d"); if (!ctx) return;
+    const bg = ctx.createLinearGradient(0, 0, 1440, 1920); bg.addColorStop(0, "#fffaf2"); bg.addColorStop(.5, "#f6edff"); bg.addColorStop(1, "#eef8f5"); ctx.fillStyle = bg; ctx.fillRect(0, 0, 1440, 1920);
+    ctx.fillStyle = "#2e2830"; ctx.font = "700 42px Arial"; ctx.textAlign = "center"; ctx.fillText("THE LIFE EDIT", 720, 100);
+    ctx.font = "86px Georgia"; wrap(ctx, data.vision || "My Vision Board", 720, 205, 1040, 94, 2);
+    const slots = [{x:90,y:360,w:560,h:500},{x:690,y:330,w:330,h:370},{x:1050,y:400,w:300,h:520},{x:120,y:900,w:360,h:430},{x:520,y:820,w:420,h:560},{x:980,y:960,w:340,h:390},{x:100,y:1380,w:430,h:360},{x:570,y:1420,w:310,h:320},{x:920,y:1380,w:390,h:360}];
+    for (let i = 0; i < items.length; i += 1) {
+      const item = items[i], slot = slots[i % slots.length], radius = 26;
+      ctx.save(); ctx.beginPath(); ctx.roundRect(slot.x, slot.y, slot.w, slot.h, radius); ctx.clip();
+      const image = await loadImage(item.url);
+      if (image) {
+        const scale = Math.max(slot.w / image.width, slot.h / image.height);
+        const w = image.width * scale, h = image.height * scale;
+        ctx.drawImage(image, slot.x + (slot.w - w) / 2, slot.y + (slot.h - h) / 2, w, h);
+      } else {
+        const fill = ctx.createLinearGradient(slot.x, slot.y, slot.x + slot.w, slot.y + slot.h);
+        fill.addColorStop(0, ["#f6dccd","#d8c2f0","#d7edf1"][i % 3]); fill.addColorStop(1, ["#fff4da","#e5f4ef","#fffaf2"][i % 3]);
+        ctx.fillStyle = fill; ctx.fillRect(slot.x, slot.y, slot.w, slot.h);
+      }
+      ctx.fillStyle = "rgba(46,40,48,.42)"; ctx.fillRect(slot.x, slot.y + slot.h - 150, slot.w, 150);
+      ctx.fillStyle = "#fffaf2"; ctx.textAlign = "left"; ctx.font = "700 28px Arial"; wrap(ctx, item.title, slot.x + 28, slot.y + slot.h - 98, slot.w - 56, 34, 2);
+      if (item.quote) { ctx.font = "italic 22px Georgia"; wrap(ctx, item.quote, slot.x + 28, slot.y + slot.h - 36, slot.w - 56, 26, 1); }
+      ctx.restore();
+    }
+    ctx.fillStyle = "#80602a"; ctx.font = "700 30px Arial"; ctx.textAlign = "center"; ctx.fillText("Manage every area of your life in one place. Become 1% better every day.", 720, 1820);
+    const mime = exportFormat === "png" ? "image/png" : "image/jpeg";
+    canvas.toBlob(blob => {
+      if (!blob) { setExportStatus("Could not create export."); return; }
+      const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `life-edit-vision-board.${exportFormat === "png" ? "png" : "jpg"}`; a.click(); URL.revokeObjectURL(url); setExportStatus("Vision board collage downloaded.");
+    }, mime, .94);
+  }
 
   return <section className="le-vision-experience">
     <div className="le-vision-hero">
@@ -93,10 +152,13 @@ export function VisionWorkspace() {
       </div>
       <div className="le-vision-actions">
         <select aria-label="Vision category filter" value={category} onChange={e => setCategory(e.target.value)}>{categories.map(c => <option key={c}>{c}</option>)}</select>
+        <select aria-label="Vision export format" value={exportFormat} onChange={e => setExportFormat(e.target.value as "png"|"jpeg")}><option value="png">PNG</option><option value="jpeg">JPG</option></select>
+        <Button secondary onClick={() => void exportBoard()}><Download size={16} />Export collage</Button>
         <Button secondary onClick={() => setSettings(!settings)}><Palette size={16} />Categories</Button>
         <Button onClick={() => add()}><Plus size={16} />Add vision item</Button>
       </div>
     </div>
+    {exportStatus && <p role="status" className="le-export-status">{exportStatus}</p>}
     {settings && <CategoryManager categoryKey="visionCategories" title="Vision categories" />}
     <div className="le-vision-daily">
       <div>
