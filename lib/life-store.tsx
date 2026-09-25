@@ -29,7 +29,7 @@ export type LifeData = ExtraData & RefinementData & {
   journals: { id: string; title: string; template: string; pillar: string; body: string; date: string }[];
   currencies: { code: string; name: string; symbol: string }[]; currency: string;
   categories: string[]; budgets: { id: string; category: string; amount: number; currency: string; month: string }[];
-  transactions: { id: string; title: string; category: string; amount: number; type: string; classification?: Classification | ""; currency: string; date: string }[];
+  transactions: { id: string; title: string; category: string; amount: number; type: string; classification?: Classification | ""; currency: string; date: string; plannedDate?: string; dueDate?: string; paid?: boolean; paidDate?: string }[];
   workoutTypes: string[]; workouts: Workout[]; workoutLogs: { id: string; name: string; date: string; minutes: number; volume: number; exercises?: Workout["exercises"]; notes?: string }[];
   focusTypes: string[]; focus: { id: string; name: string; seconds: number; date: string }[];
   board: { id: string; title: string; url: string; category?: string; notes?: string; goalId?: string; kind?: string; target?: number; saved?: number; currency?: string; quote?: string; coachNote?: string }[];

@@ -39,6 +39,9 @@ export function defaultPillarStyles(): PillarStyle[] {
 }
 type Transaction = LifeData["transactions"][number];
 export const isSavings = (t: Transaction) => t.type !== "Income" && (t.type === "Savings" || t.type === "Investment" || t.classification === "Savings");
+export const financeEventDate = (t: Transaction) => t.paid && t.paidDate ? t.paidDate : t.plannedDate || t.dueDate || t.date;
+export const financeEventLabel = (t: Transaction) => t.type === "Income" ? "Income Date" : t.paid ? "Paid Expense" : t.plannedDate ? "Planned Expense" : t.dueDate ? "Scheduled Expense" : isSavings(t) ? "Savings Contribution" : "Transaction";
+export const isPlannedFinanceTransaction = (t: Transaction, asOf: string) => t.type !== "Income" && !t.paid && Boolean(financeEventDate(t)) && (!t.date || t.date > asOf) && (Boolean(t.plannedDate || t.dueDate) || financeEventDate(t) > asOf);
 export function financialTotals(rows: Transaction[]) {
   const income=rows.filter(t=>t.type==="Income").reduce((s,t)=>s+t.amount,0);
   const savings=rows.filter(isSavings).reduce((s,t)=>s+t.amount,0);
@@ -54,7 +57,10 @@ export function budgetAllocation(transactions: Transaction[], budgets: LifeData[
   }
   const spent = new Map<string, number>();
   let income = 0;
-  for (const row of transactions.filter(t => (range ? t.date >= range.start && t.date <= range.end : t.date.startsWith(month)) && t.currency === currency)) {
+  for (const row of transactions.filter(t => {
+    const eventDate = financeEventDate(t);
+    return Boolean(eventDate) && (range ? eventDate >= range.start && eventDate <= range.end : eventDate.startsWith(month)) && t.currency === currency;
+  })) {
     if (row.type === "Income") income += cents(row.amount);
     else spent.set(row.category, (spent.get(row.category) ?? 0) + cents(row.amount));
   }
@@ -123,6 +129,57 @@ export function dailyBudgetSummary(data:LifeData,date:string,currency=data.curre
   const plannedSpending=data.dailyBudgetPlans.filter(p=>p.currency===currency&&p.date===date).reduce((s,p)=>s+p.amount,0);
   return {date,currency,dailyBudget,plannedSpending,actualSpending:actualToday,remainingToday:dailyBudget-plannedSpending-actualToday,categories};
 }
+export function financeCalendarSummary(data:LifeData,date:string,currency=data.currency) {
+  const cycle=paydayCycleForDate(date,data.financeSettings?.payday);
+  const budgets=data.budgets.filter(b=>b.currency===currency&&b.month===cycle.budgetMonth);
+  const budgetedCategories=new Set(budgets.map(b=>b.category));
+  const days:string[]=[];
+  for(let day=cycle.start;day<=cycle.end;day=addDays(day,1)) days.push(day);
+  const transactions=data.transactions.filter(t=>t.currency===currency&&Boolean(financeEventDate(t))&&financeEventDate(t)>=cycle.start&&financeEventDate(t)<=cycle.end);
+  const plannedRows=data.dailyBudgetPlans.filter(p=>p.currency===currency&&p.date>=cycle.start&&p.date<=cycle.end);
+  const actualExpense=(t:Transaction)=>t.type!=="Income"&&!isSavings(t)&&Boolean(t.date)&&t.date<=date&&!isPlannedFinanceTransaction(t,date);
+  const eventAmount=(day:string,type:(t:Transaction)=>boolean)=>transactions.filter(t=>financeEventDate(t)===day&&type(t)).reduce((s,t)=>s+t.amount,0);
+  const plannedAmount=(day:string)=>transactions.filter(t=>financeEventDate(t)===day&&isPlannedFinanceTransaction(t,date)).reduce((s,t)=>s+t.amount,0)+plannedRows.filter(p=>p.date===day).reduce((s,p)=>s+p.amount,0);
+  const savingsAmount=(day:string)=>eventAmount(day,t=>isSavings(t));
+  const incomeAmount=(day:string)=>eventAmount(day,t=>t.type==="Income");
+  const budgetEventAmount=(day:string)=>plannedRows.filter(p=>p.date===day&&(!p.category||budgetedCategories.has(p.category))).reduce((s,p)=>s+p.amount,0);
+  const daily=days.map(day=>{
+    const spending=eventAmount(day,actualExpense);
+    const planned=plannedAmount(day);
+    const savings=savingsAmount(day);
+    const income=incomeAmount(day);
+    const budgetEvents=budgetEventAmount(day);
+    const eventCount=transactions.filter(t=>financeEventDate(t)===day).length+plannedRows.filter(p=>p.date===day).length;
+    return {date:day,spending,planned,savings,income,budgetEvents,eventCount,totalOutflow:spending+planned+savings};
+  });
+  const weekRanges=weeksInRange(cycle.start,cycle.end);
+  const weekly=weekRanges.map(week=>{
+    const rows=daily.filter(day=>day.date>=week.start&&day.date<=week.end);
+    return {...week,spending:rows.reduce((s,row)=>s+row.spending,0),planned:rows.reduce((s,row)=>s+row.planned,0),savings:rows.reduce((s,row)=>s+row.savings,0),totalOutflow:rows.reduce((s,row)=>s+row.totalOutflow,0)};
+  });
+  const monthly={spending:daily.reduce((s,row)=>s+row.spending,0),planned:daily.reduce((s,row)=>s+row.planned,0),savings:daily.reduce((s,row)=>s+row.savings,0),income:daily.reduce((s,row)=>s+row.income,0),totalOutflow:daily.reduce((s,row)=>s+row.totalOutflow,0)};
+  const averageDaily=monthly.totalOutflow/Math.max(1,daily.filter(day=>day.totalOutflow>0).length||days.length);
+  const averageWeekly=monthly.totalOutflow/Math.max(1,weekly.filter(week=>week.totalOutflow>0).length||weekly.length);
+  const highSpendDays=daily.filter(day=>day.totalOutflow>=Math.max(1000,averageDaily*1.6)).map(day=>day.date);
+  const highSpendWeeks=weekly.filter(week=>week.totalOutflow>=Math.max(2500,averageWeekly*1.4)).map(week=>week.start);
+  const upcomingMajorExpenses=[
+    ...transactions.filter(t=>financeEventDate(t)>=date&&financeEventDate(t)<=cycle.end&&isPlannedFinanceTransaction(t,date)).map(t=>({id:t.id,date:financeEventDate(t),title:t.title,category:t.category,amount:t.amount})),
+    ...plannedRows.filter(p=>p.date>=date).map(p=>({id:p.id,date:p.date,title:p.note||p.category||"Planned spend",category:p.category,amount:p.amount}))
+  ].filter(item=>item.amount>=Math.max(1000,averageDaily*1.5)).sort((a,b)=>a.date.localeCompare(b.date)||b.amount-a.amount).slice(0,6);
+  const insights:string[]=[];
+  const currentWeek=weekly.find(week=>date>=week.start&&date<=week.end);
+  if(currentWeek&&currentWeek.planned>0) insights.push(`This week contains ${Math.round(currentWeek.planned)} of planned spending.`);
+  for(let i=0;i<upcomingMajorExpenses.length;i++) {
+    const cluster=upcomingMajorExpenses.filter(item=>daysBetween(upcomingMajorExpenses[i].date,item.date)>=0&&daysBetween(upcomingMajorExpenses[i].date,item.date)<=5);
+    if(cluster.length>=3) { insights.push(`You have ${cluster.length} large expenses within 5 days.`); break; }
+  }
+  for(const budget of budgets) {
+    const actual=data.transactions.filter(t=>t.currency===currency&&t.category===budget.category&&t.type!=="Income"&&financeEventDate(t)>=cycle.start&&financeEventDate(t)<=cycle.end&&!isPlannedFinanceTransaction(t,date)).reduce((s,t)=>s+t.amount,0);
+    const planned=transactions.filter(t=>t.category===budget.category&&isPlannedFinanceTransaction(t,date)).reduce((s,t)=>s+t.amount,0)+plannedRows.filter(p=>p.category===budget.category).reduce((s,p)=>s+p.amount,0);
+    if(actual+planned>budget.amount) insights.push(`${budget.category} will exceed budget if all scheduled expenses occur.`);
+  }
+  return {date,currency,cycleStart:cycle.start,cycleEnd:cycle.end,daily,weekly,monthly,highSpendDays,highSpendWeeks,upcomingMajorExpenses,insights:[...new Set(insights)]};
+}
 export function budgetGuidanceSummary(data:LifeData,date:string,currency=data.currency) {
   const cycle=paydayCycleForDate(date,data.financeSettings?.payday);
   const month=cycle.budgetMonth;
@@ -134,12 +191,13 @@ export function budgetGuidanceSummary(data:LifeData,date:string,currency=data.cu
   const budgetedCategories=new Set(budgets.map(b=>b.category));
   const monthlyBudget=budgets.reduce((s,b)=>s+b.amount,0);
   const transactions=data.transactions.filter(t=>t.currency===currency&&t.type!=="Income");
-  const monthRows=transactions.filter(t=>t.date>=cycle.start&&t.date<=cycle.end);
-  const weekRows=transactions.filter(t=>t.date>=start&&t.date<=end);
-  const todayRows=transactions.filter(t=>t.date===date);
+  const monthRows=transactions.filter(t=>financeEventDate(t)>=cycle.start&&financeEventDate(t)<=cycle.end);
+  const actualMonthRows=monthRows.filter(t=>!isPlannedFinanceTransaction(t,date));
+  const weekRows=actualMonthRows.filter(t=>financeEventDate(t)>=start&&financeEventDate(t)<=end);
+  const todayRows=actualMonthRows.filter(t=>financeEventDate(t)===date);
   const plannedToday=data.dailyBudgetPlans.filter(p=>p.currency===currency&&p.date===date).reduce((s,p)=>s+p.amount,0);
   const budgetedSpend=(rows:Transaction[])=>rows.filter(t=>budgetedCategories.has(t.category)).reduce((s,t)=>s+t.amount,0);
-  const monthlySpent=budgetedSpend(monthRows);
+  const monthlySpent=budgetedSpend(actualMonthRows);
   const weeklySpent=budgetedSpend(weekRows);
   const todaySpent=budgetedSpend(todayRows);
   const monthlyRemaining=monthlyBudget-monthlySpent;
@@ -168,11 +226,12 @@ export function budgetGuidanceSummary(data:LifeData,date:string,currency=data.cu
   const weekSavings=transactions.filter(t=>t.date>=start&&t.date<=end&&isSavings(t)).reduce((s,t)=>s+t.amount,0);
   const goalProgress=data.savingsGoals.filter(g=>!g.archived&&g.currency===currency&&g.target>0).slice(0,2).map(g=>({title:g.title,boost:weekSavings/g.target*100}));
   const weekEnvelopes=monthWeeks.map(week=>{
-    const rows=monthRows.filter(t=>t.date>=week.start&&t.date<=week.end&&budgetedCategories.has(t.category));
-    const spent=rows.reduce((s,t)=>s+t.amount,0);
-    const scheduled=rows.filter(t=>t.date>date).reduce((s,t)=>s+t.amount,0);
+    const rows=monthRows.filter(t=>financeEventDate(t)>=week.start&&financeEventDate(t)<=week.end&&budgetedCategories.has(t.category));
+    const spent=rows.filter(t=>!isPlannedFinanceTransaction(t,date)).reduce((s,t)=>s+t.amount,0);
+    const planned=data.dailyBudgetPlans.filter(p=>p.currency===currency&&p.date>=week.start&&p.date<=week.end&&budgetedCategories.has(p.category)).reduce((s,p)=>s+p.amount,0);
+    const scheduled=rows.filter(t=>isPlannedFinanceTransaction(t,date)).reduce((s,t)=>s+t.amount,0)+planned;
     const budget=week.start===currentMonthWeek?.start?weeklyBudget:amountForWeek(week);
-    return {...week,budget,systemBudget:amountForWeek(week),spent,scheduled,remaining:budget-spent,recommendedDaily:budget/Math.max(1,daysBetween(week.start,week.end)+1)};
+    return {...week,budget,systemBudget:amountForWeek(week),spent,scheduled,remaining:budget-spent-scheduled,recommendedDaily:budget/Math.max(1,daysBetween(week.start,week.end)+1)};
   });
   return {date,currency,month,budgetMonth:month,cycleStart:cycle.start,cycleEnd:cycle.end,nextPayday:cycle.nextPayday,payday:cycle.payday,daysUntilPayday:cycle.daysUntilPayday,periodDays:cycle.periodDays,weekStart:start,weekEnd:end,monthlyBudget,monthlySpent,monthlyRemaining,weeklyBudget,systemWeeklyBudget,weeklySpent,weekRemaining,dailyTarget,systemDailyTarget,todaySpent,plannedToday,todayRemaining,tomorrowSuggested,health,insight,projectedMonthEnd,weekSavings,goalProgress,spendingVelocity,breathingRoom:monthlyRemaining,weekEnvelopes};
 }

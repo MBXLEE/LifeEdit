@@ -365,6 +365,9 @@
 .le-planned-spend-item small { display:block;margin-top:4px;font-size:12px; }
 .le-text-action { min-height:34px;padding:7px 10px;border-radius:10px;color:hsl(var(--primary));font-size:12px;font-weight:750;transition:background .18s,color .18s; }
 .le-text-action:hover { background:hsl(var(--secondary));color:hsl(var(--secondary-foreground)); }
+.le-text-action[aria-pressed=true] { background:color-mix(in srgb,#bfe7c7 56%,hsl(var(--card)));color:#35724b; }
+.le-log.is-paid strong:first-child { text-decoration:line-through;text-decoration-thickness:2px;text-decoration-color:color-mix(in srgb,#35724b 55%,transparent); }
+.le-log.is-paid .le-muted { color:#4f7d61; }
 .le-budget-empty { display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;padding:18px;border-radius:16px;background:hsl(var(--muted));font-size:13px; }
 .le-journal-actions { display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:22px; }
 .le-journal-actions .le-button { min-width:190px; }
@@ -474,6 +477,29 @@
 .le-compact-action { min-height:38px!important;padding:9px 14px!important;border-radius:12px!important;font-size:12px!important; }
 .le-coach-answer { margin-top:18px;padding:18px;border-radius:20px;background:hsl(var(--card)/.72);border:1px solid hsl(var(--border)/.64); }
 .le-coach-answer strong { display:block;margin-bottom:8px;font:22px/1.2 Georgia,serif; }
+.le-finance-calendar-view { display:block; }
+.le-finance-calendar-card svg,.le-cashflow-insights svg { color:hsl(var(--primary)); }
+.le-cashflow-insights { background:linear-gradient(145deg,hsl(var(--card)/.96),color-mix(in srgb,#fff3d0 35%,hsl(var(--card))));border-color:color-mix(in srgb,#c69a42 35%,hsl(var(--border))); }
+.le-insight-list { display:grid;gap:10px;margin-top:18px; }
+.le-insight-list p { padding:13px 15px;border-radius:14px;background:hsl(var(--card)/.72);border:1px solid hsl(var(--border)/.62);font-size:13px;font-weight:700; }
+.le-calendar-weekdays,.le-finance-calendar-grid { display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px; }
+.le-calendar-weekdays { margin-top:22px;color:hsl(var(--muted-foreground));font-size:10px;font-weight:800;text-transform:uppercase;text-align:center; }
+.le-finance-calendar-grid { margin-top:8px; }
+.le-finance-calendar-grid>div { min-height:116px;padding:10px;border-radius:14px;background:hsl(var(--card)/.68);border:1px solid hsl(var(--border)/.62);box-shadow:inset 0 1px 0 #fff; }
+.le-finance-calendar-grid>div:empty { background:transparent;border-color:transparent;box-shadow:none; }
+.le-finance-calendar-grid strong { display:block;font:22px/1.1 Georgia,serif; }
+.le-finance-calendar-grid span { display:block;margin-top:8px;font-size:13px;font-weight:800;color:hsl(var(--foreground)); }
+.le-finance-calendar-grid i,.le-finance-calendar-grid small { display:block;margin-top:6px;font-size:10px;font-style:normal;color:hsl(var(--muted-foreground)); }
+.le-finance-calendar-grid i { width:max-content;max-width:100%;padding:4px 6px;border-radius:999px;background:hsl(var(--secondary)/.7);font-weight:750; }
+.le-finance-calendar-grid i.is-income { color:#35724b;background:color-mix(in srgb,#bfe7c7 60%,hsl(var(--card))); }
+.le-finance-calendar-grid .is-today { border-color:hsl(var(--primary)/.45);box-shadow:inset 0 1px 0 #fff,0 14px 28px hsl(var(--primary)/.09); }
+.le-finance-calendar-grid .is-high-spend { background:color-mix(in srgb,#fff2f0 62%,hsl(var(--card)));border-color:color-mix(in srgb,#bd5364 34%,hsl(var(--border))); }
+.le-calendar-side { min-width:0; }
+.le-calendar-week-row,.le-calendar-event-row { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid hsl(var(--border)); }
+.le-calendar-week-row strong,.le-calendar-event-row strong { display:block;font-size:13px; }
+.le-calendar-week-row small,.le-calendar-event-row small { display:block;margin-top:4px;color:hsl(var(--muted-foreground));font-size:11px; }
+.le-calendar-week-row span,.le-calendar-event-row span { font-weight:850;font-size:13px;text-align:right; }
+.le-calendar-week-row.is-high-spend span { color:#a83747; }
 .le-goals-vision { display:grid;gap:22px; }
 .le-goal-card { background:linear-gradient(145deg,hsl(var(--card)),color-mix(in srgb,hsl(var(--secondary)) 16%,hsl(var(--card))));border:1px solid hsl(var(--border)/.68);box-shadow:inset 0 1px 0 #fff,0 16px 36px rgba(38,48,62,.06); }
 .le-goals-role-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:20px; }
@@ -568,4 +594,4 @@
   .le-vision-empty-board button:nth-child(2) { right:6%;top:40%;width:165px; }
   .le-vision-empty-board button:nth-child(3) { left:10%;bottom:10%;width:220px; }
 }
-@media(max-width:760px) { .le-daily-budget-grid,.le-budget-guidance-stack,.le-budget-feedback { grid-template-columns:minmax(0,1fr); }.le-budget-empty { align-items:flex-start;flex-direction:column; }.le-social-hero { padding:22px; }.le-social-hero h2 { font-size:26px; }.le-social-stats,.le-streak-layout { grid-template-columns:minmax(0,1fr); }.le-streak-badge { max-width:210px;margin:0 auto; }.le-streak-share { align-items:flex-start;flex-direction:column; }.le-journal-actions { gap:12px; }.le-journal-actions .le-button,.le-journal-actions a { width:100%;justify-content:center; } }
+@media(max-width:760px) { .le-daily-budget-grid,.le-budget-guidance-stack,.le-budget-feedback { grid-template-columns:minmax(0,1fr); }.le-budget-empty { align-items:flex-start;flex-direction:column; }.le-finance-calendar-grid,.le-calendar-weekdays { gap:4px; }.le-finance-calendar-grid>div { min-height:88px;padding:7px;border-radius:10px; }.le-finance-calendar-grid strong { font-size:16px; }.le-finance-calendar-grid span { font-size:10px; }.le-finance-calendar-grid i,.le-finance-calendar-grid small { display:none; }.le-social-hero { padding:22px; }.le-social-hero h2 { font-size:26px; }.le-social-stats,.le-streak-layout { grid-template-columns:minmax(0,1fr); }.le-streak-badge { max-width:210px;margin:0 auto; }.le-streak-share { align-items:flex-start;flex-direction:column; }.le-journal-actions { gap:12px; }.le-journal-actions .le-button,.le-journal-actions a { width:100%;justify-content:center; } }
