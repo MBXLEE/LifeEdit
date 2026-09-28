@@ -1,7 +1,7 @@
 import type { LifeData } from "./life-store";
 export type Classification = "Need" | "Want" | "Savings";
 export type Review = { id: string; date: string; ratings: Record<string, number>; notes: string };
-export type DailyBudgetPlan = { id: string; date: string; category: string; amount: number; currency: string; note: string };
+export type DailyBudgetPlan = { id: string; date: string; category: string; amount: number; currency: string; note: string; actualAmount?: number; completed?: boolean };
 export type WeeklyBudgetPlan = { id: string; month: string; weekStart: string; weekEnd: string; amount: number; currency: string };
 export type PillarSubcategory = { id: string; name: string; color: string };
 export type PillarStyle = { pillar: string; color: string; subcategories: PillarSubcategory[] };

@@ -31,8 +31,8 @@ export function ResetDemoData() {
   if (!isDemoMode) return null;
   async function reset() {
     setBusy(true); setError("");
-    try { await resetDemoWorkspace(emptyData()); window.location.replace("/onboarding"); }
+    try { await resetDemoWorkspace(emptyData()); window.location.replace("/dashboard"); }
     catch (e) { setError(e instanceof Error ? e.message : "Could not reset local data."); setBusy(false); }
   }
-  return <section className="le-demo-settings"><h2>Demo workspace</h2><p className="le-muted">Reset removes demo and guest records and local uploads from this browser. It does not change Supabase data.</p><Button secondary onClick={() => setOpen(true)}><RotateCcw size={16}/>Reset Demo Data</Button>{open && <Modal title="Reset demo data?" close={() => { if (!busy) setOpen(false); }}><p className="le-muted my-5">All local test records and uploaded images will be removed. Onboarding will restart. This cannot be undone.</p>{error && <p role="alert">{error}</p>}<div className="le-inline"><Button secondary disabled={busy} onClick={() => setOpen(false)}>Cancel</Button><Button disabled={busy} onClick={() => void reset()}>{busy ? "Resetting..." : "Reset and restart onboarding"}</Button></div></Modal>}</section>;
+  return <section className="le-demo-settings"><h2>Demo workspace</h2><p className="le-muted">Reset removes demo and guest records and local uploads from this browser. It does not change Supabase data.</p><Button secondary onClick={() => setOpen(true)}><RotateCcw size={16}/>Reset Demo Data</Button>{open && <Modal title="Reset demo data?" close={() => { if (!busy) setOpen(false); }}><p className="le-muted my-5">All local test records and uploaded images will be replaced with the October demo workspace. This cannot be undone.</p>{error && <p role="alert">{error}</p>}<div className="le-inline"><Button secondary disabled={busy} onClick={() => setOpen(false)}>Cancel</Button><Button disabled={busy} onClick={() => void reset()}>{busy ? "Resetting..." : "Reset demo workspace"}</Button></div></Modal>}</section>;
 }

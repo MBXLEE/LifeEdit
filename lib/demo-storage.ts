@@ -15,6 +15,12 @@ export function loadDemoWorkspace(base: LifeData, profile = activeDemoProfile())
   if (raw) {
     const saved = JSON.parse(raw);
     if (!saved || saved.version !== 2 || !Array.isArray(saved.tasks)) throw new Error("Local demo data could not be read. Reset Demo Data in Settings or restore a valid backup.");
+    const oldDemoSeed = profile === "demo" && saved.name === "Demo User" && (!saved.transactions?.some((row: { id?: string }) => row.id === "demo-car-payment") || saved.tasks.length === 0);
+    if (oldDemoSeed) {
+      const data = createDemoData(base);
+      saveDemoWorkspace(data, profile);
+      return data;
+    }
     return { ...base, ...saved } as LifeData;
   }
   const data = profile === "guest" ? { ...base, name: "Guest" } : createDemoData(base);
@@ -43,7 +49,7 @@ export async function resetDemoWorkspace(base: LifeData) {
   localStorage.removeItem(BANNER_KEY);
   localStorage.removeItem("life-edit-theme");
   selectDemoProfile("demo");
-  const clean = { ...base, name: "Demo User" };
+  const clean = createDemoData(base);
   saveDemoWorkspace(clean, "demo");
   localStorage.setItem(RESET_KEY, crypto.randomUUID());
   return clean;
