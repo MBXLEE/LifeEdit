@@ -15,7 +15,7 @@ export function loadDemoWorkspace(base: LifeData, profile = activeDemoProfile())
   if (raw) {
     const saved = JSON.parse(raw);
     if (!saved || saved.version !== 2 || !Array.isArray(saved.tasks)) throw new Error("Local demo data could not be read. Reset Demo Data in Settings or restore a valid backup.");
-    const oldDemoSeed = profile === "demo" && saved.name === "Demo User" && (!saved.transactions?.some((row: { id?: string }) => row.id === "demo-car-payment") || saved.tasks.length === 0);
+    const oldDemoSeed = profile === "demo" && (saved.name !== "Ava Williams" || !saved.transactions?.some((row: { id?: string }) => row.id === "demo-income-0") || (saved.journals?.length ?? 0) < 30 || (saved.workoutLogs?.length ?? 0) < 20);
     if (oldDemoSeed) {
       const data = createDemoData(base);
       saveDemoWorkspace(data, profile);
