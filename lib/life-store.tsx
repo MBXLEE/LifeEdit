@@ -13,7 +13,16 @@ import { activeDemoProfile, loadDemoWorkspace, saveDemoWorkspace, RESET_KEY, typ
 export const pillars = ["Financial", "Physical", "Mental & Emotional", "Social", "Spiritual", "Personal Growth"];
 export const themeNames = ["Ocean", "Blush", "Sage", "Cream", "Midnight"] as const;
 export type Theme = typeof themeNames[number];
-export const uid = () => crypto.randomUUID();
+export const uid = () => {
+  const cryptoApi = globalThis.crypto;
+  if (typeof cryptoApi?.randomUUID === "function") return cryptoApi.randomUUID();
+  if (typeof cryptoApi?.getRandomValues === "function") {
+    return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, char =>
+      (Number(char) ^ (cryptoApi.getRandomValues(new Uint8Array(1))[0] & (15 >> (Number(char) / 4)))).toString(16)
+    );
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}-${Math.random().toString(36).slice(2, 10)}`;
+};
 export function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 export const configured = () => !isDemoMode && Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 export type Goal = { id: string; title: string; horizon: string; parent: string; pillars: string[]; progress: number; archived: boolean; due: string; notes: string };
