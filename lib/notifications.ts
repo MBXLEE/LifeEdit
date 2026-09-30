@@ -83,7 +83,7 @@ export function focusNotifications(plan: FocusPlan | null, now = Date.now()): Sc
 export function plannerNotifications(tasks: Task[], settings: NotificationSettings, now = Date.now()): ScheduledNotification[] {
   const lead = Math.max(0, settings.reminderTimes.plannerLeadMinutes) * 60 * 1000;
   return tasks.flatMap(task => {
-    if (task.done) return [];
+    if (task.done || task.kind === "todo") return [];
     const due = combineDateTime(task.date, task.time);
     if (!due) return [];
     const rows: ScheduledNotification[] = [];

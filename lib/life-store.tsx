@@ -27,7 +27,7 @@ export function today() { const d = new Date(); return `${d.getFullYear()}-${Str
 export const configured = () => !isDemoMode && Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 export type Goal = { id: string; title: string; horizon: string; parent: string; pillars: string[]; progress: number; archived: boolean; due: string; notes: string };
 export type Habit = { id: string; name: string; direction: "build" | "quit"; dates: string[]; start: string; setbacks: { date: string; note: string }[] };
-export type Task = { id: string; title: string; date: string; time: string; minutes: number; pillar: string; done: boolean };
+export type Task = { id: string; title: string; date: string; time: string; minutes: number; pillar: string; done: boolean; kind?: "time-block" | "todo" };
 export type Workout = { id: string; name: string; category: string; warmup: string; cooldown?: string; notes?: string; archived?: boolean; exercises: (Omit<Exercise, "category" | "seconds" | "notes"> & Partial<Pick<Exercise, "category" | "seconds" | "notes">>)[] };
 export type LifeData = ExtraData & RefinementData & {
   version: 2; name: string; theme: Theme; onboarded: boolean;
