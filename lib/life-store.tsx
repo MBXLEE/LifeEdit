@@ -32,6 +32,29 @@ export type Habit = { id: string; name: string; direction: "build" | "quit"; dat
 export type Task = { id: string; title: string; date: string; time: string; minutes: number; pillar: string; done: boolean; kind?: "time-block" | "todo" };
 export type Workout = { id: string; name: string; category: string; warmup: string; cooldown?: string; notes?: string; archived?: boolean; exercises: (Omit<Exercise, "category" | "seconds" | "notes"> & Partial<Pick<Exercise, "category" | "seconds" | "notes">>)[] };
 export type JournalPhoto = { id: string; source: string; order: number; name?: string; createdAt: string };
+export type ResetAccountability = "Strict" | "Accountability" | "Flexible";
+export type ResetStatus = "draft" | "scheduled" | "active" | "completed" | "failed" | "abandoned";
+export type ResetIntensity = "Gentle" | "Balanced" | "Intense";
+export type ResetCommitmentType = "daily" | "specific-days" | "weekly-quantity" | "weekly-recurring" | "avoidance" | "limit" | "photo";
+export type ResetLinkedFeature = "Fitness" | "Habits" | "Journal" | "Planner" | "Finance" | "Goals" | "Spiritual" | "Focus";
+export type ResetCommitment = {
+  id: string; title: string; type: ResetCommitmentType; required: boolean; pillar: string;
+  description?: string; scheduleDays?: number[]; targetPerWeek?: number; everyNDays?: number;
+  limitAmount?: number; limitUnit?: string; linkedFeature?: ResetLinkedFeature; sourceHint?: string;
+};
+export type ResetActivity = { id: string; commitmentId: string; date: string; source: "reset" | "fitness" | "habit" | "journal" | "planner" | "finance" | "spiritual" | "focus"; externalId?: string; note?: string; value?: number };
+export type ResetProgressPhoto = { id: string; source: string; date: string; label: string; note?: string };
+export type ResetChangeLog = { id: string; date: string; day: number; text: string };
+export type ResetRestore = { id: string; date: string; window: string; note: string };
+export type ResetShareSettings = { publicTitle: string; showName: boolean; showDates: boolean; showStats: boolean; showMisses: boolean; showPhotos: boolean; showReflection: boolean; statement: string };
+export type LifeResetProgram = {
+  id: string; templateId?: string; name: string; publicName?: string; why: string; outcome: string;
+  startDate: string; endDate: string; duration: number; pillars: string[]; status: ResetStatus;
+  accountability: ResetAccountability; intensity: ResetIntensity; restoreAllowance: number; editAllowance: number;
+  commitments: ResetCommitment[]; activities: ResetActivity[]; photos: ResetProgressPhoto[];
+  changes: ResetChangeLog[]; restores: ResetRestore[]; completionReflection?: string; completedAt?: string;
+  share: ResetShareSettings; createdAt: string; updatedAt: string;
+};
 export type LifeData = ExtraData & RefinementData & {
   version: 2; name: string; theme: Theme; onboarded: boolean;
   assessment: Record<string, number>; areas: string[]; priorities: string[];
@@ -47,6 +70,7 @@ export type LifeData = ExtraData & RefinementData & {
   focusTypes: string[]; focus: { id: string; name: string; seconds: number; date: string }[];
   board: { id: string; title: string; url: string; images?: string[]; category?: string; notes?: string; goalId?: string; kind?: string; target?: number; saved?: number; currency?: string; quote?: string; phrase?: string; importance?: VisionImportance; coachNote?: string }[];
   notificationSettings: NotificationSettings;
+  lifeResets: LifeResetProgram[];
 };
 export function emptyData(): LifeData {
   return { ...extraDefaults(), ...refinementDefaults(), version: 2, name: "", theme: "Ocean", onboarded: false, assessment: {}, areas: [...pillars], priorities: [], identity: "", vision: "", mission: "", lifestyle: "", lifePillars: [...pillars], goals: [], habits: [], tasks: [],
@@ -57,7 +81,7 @@ export function emptyData(): LifeData {
       ["Who did I connect with today?", "How can I strengthen important relationships?"],
       ["What did I learn during reflection today?", "What am I praying for?"],
       ["What skill am I improving?", "What progress did I make?"]
-    ][i] })), journals: [], currencies: [{ code: "ZAR", name: "South African rand", symbol: "R" }, { code: "USD", name: "US dollar", symbol: "$" }, { code: "GBP", name: "British pound", symbol: "£" }, { code: "EUR", name: "Euro", symbol: "€" }], currency: "ZAR", categories: ["Housing", "Utilities", "Food", "Transport", "Entertainment", "Savings", "Investments", "Health", "Giving"], budgets: [], transactions: [], workoutTypes: ["Full Body", "Upper Body", "Lower Body", "Push", "Pull", "Legs", "Cardio", "Core", "Mobility", "Recovery"], workouts: [], workoutLogs: [], focusTypes: ["Study", "Deep Work", "Reading", "Work"], focus: [], board: [], notificationSettings: defaultNotificationSettings() };
+    ][i] })), journals: [], currencies: [{ code: "ZAR", name: "South African rand", symbol: "R" }, { code: "USD", name: "US dollar", symbol: "$" }, { code: "GBP", name: "British pound", symbol: "£" }, { code: "EUR", name: "Euro", symbol: "€" }], currency: "ZAR", categories: ["Housing", "Utilities", "Food", "Transport", "Entertainment", "Savings", "Investments", "Health", "Giving"], budgets: [], transactions: [], workoutTypes: ["Full Body", "Upper Body", "Lower Body", "Push", "Pull", "Legs", "Cardio", "Core", "Mobility", "Recovery"], workouts: [], workoutLogs: [], focusTypes: ["Study", "Deep Work", "Reading", "Work"], focus: [], board: [], notificationSettings: defaultNotificationSettings(), lifeResets: [] };
 }
 function withDefaults(raw: Partial<LifeData>): LifeData {
   const base = emptyData();
@@ -73,7 +97,17 @@ function withDefaults(raw: Partial<LifeData>): LifeData {
     const images = (item.images?.length ? item.images : item.url ? [item.url] : []).slice(0, 6);
     return { ...item, url: item.url ?? images[0] ?? "", images, phrase: item.phrase ?? item.quote ?? "", importance: item.importance ?? "Medium" };
   });
-  return { ...base, ...raw, goals, board, lifePillars, spendingLimits: { ...base.spendingLimits, ...raw.spendingLimits, categories: { ...base.spendingLimits.categories, ...raw.spendingLimits?.categories } }, notificationSettings };
+  const lifeResets = (raw.lifeResets ?? base.lifeResets).map(reset => ({
+    ...reset,
+    publicName: reset.publicName ?? reset.name,
+    pillars: reset.pillars?.length ? reset.pillars : [lifePillars[0] ?? "Personal Growth"],
+    activities: reset.activities ?? [],
+    photos: reset.photos ?? [],
+    changes: reset.changes ?? [],
+    restores: reset.restores ?? [],
+    share: { ...{ publicTitle: reset.publicName ?? reset.name, showName: true, showDates: true, showStats: true, showMisses: false, showPhotos: false, showReflection: true, statement: "" }, ...(reset.share ?? {}) }
+  }));
+  return { ...base, ...raw, goals, board, lifePillars, lifeResets, spendingLimits: { ...base.spendingLimits, ...raw.spendingLimits, categories: { ...base.spendingLimits.categories, ...raw.spendingLimits?.categories } }, notificationSettings };
 }
 type Store = { data: LifeData; update: (fn: (data: LifeData) => LifeData) => void; ready: boolean; status: string; error: string; retry: () => void; account: boolean; back: () => void; undo: () => void; undoLabel: string; dismissUndo: () => void; offerUndo: (label: string, restore: (data: LifeData) => LifeData) => void };
 const Context = createContext<Store | null>(null);
