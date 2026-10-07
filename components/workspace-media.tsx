@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { ImagePlus, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useLife } from "@/lib/life-store";
 import { isDemoMode } from "@/lib/app-mode";
@@ -55,4 +56,45 @@ export function ImageUpload({value,onChange,onBusy}:{value:string;onChange:(sour
     catch(e){setError(e instanceof Error?e.message:"Image could not be saved. Try again.");}finally{setBusy(false);onBusy?.(false);}
   }
   return <div className="le-field"><label>Upload image<input aria-label="Upload image" type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={e=>{const file=e.target.files?.[0];if(file)void upload(file);}}/></label>{busy&&<p role="status">Saving image...</p>}{error&&<p role="alert">{error}</p>}{value&&<MediaImage source={value} alt="Selected image"/>}</div>;
+}
+
+export function MultiImageUpload({ values, onChange, onBusy, max = 6, label = "Images" }: { values: string[]; onChange: (sources: string[]) => void; onBusy?: (busy: boolean) => void; max?: number; label?: string }) {
+  const { account } = useLife();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function add(files: FileList | null) {
+    if (!files?.length) return;
+    setError("");
+    const incoming = Array.from(files);
+    const room = max - values.length;
+    if (room <= 0 || incoming.length > room) {
+      setError(`You can upload up to ${max} images for one vision item.`);
+      return;
+    }
+    setBusy(true); onBusy?.(true);
+    const added: string[] = [];
+    const failures: string[] = [];
+    for (const file of incoming) {
+      try { added.push(await uploadMediaFile(file, { account })); }
+      catch (e) { failures.push(`${file.name}: ${e instanceof Error ? e.message : "Image could not be saved. Try again."}`); }
+    }
+    if (added.length) onChange([...values, ...added].slice(0, max));
+    if (failures.length) setError(failures.length === 1 ? failures[0] : `${failures.length} images could not be added. ${failures[0]}`);
+    setBusy(false); onBusy?.(false);
+  }
+  function remove(source: string) {
+    onChange(values.filter(item => item !== source));
+  }
+  return <section className="le-multi-image-upload" aria-label={label}>
+    <div className="le-row">
+      <div><p className="le-eyebrow">{label}</p><p className="le-muted">Add up to {max} images. They will stay together as one mini collage.</p></div>
+      <label className={`le-photo-add ${busy ? "is-busy" : ""}`}><ImagePlus size={16} />{busy ? "Adding..." : "Add images"}<input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={busy || values.length >= max} onChange={e => { void add(e.target.files); e.currentTarget.value = ""; }} /></label>
+    </div>
+    {values.length >= max && <p className="le-muted">Image limit reached.</p>}
+    {error && <p role="alert" className="le-error">{error}</p>}
+    {values.length > 0 && <div className="le-vision-image-editor-grid">{values.map((source, index) => <figure key={`${source}-${index}`} className="le-vision-image-editor-tile">
+      <MediaImage source={source} alt={`Vision image ${index + 1}`} />
+      <figcaption><span>Image {index + 1}</span><button type="button" aria-label={`Remove image ${index + 1}`} onClick={() => remove(source)}><X size={15} /></button></figcaption>
+    </figure>)}</div>}
+  </section>;
 }

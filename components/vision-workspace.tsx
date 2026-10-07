@@ -1,14 +1,16 @@
 "use client";
 import { useMemo, useState, type ReactNode } from "react";
 import { Download, Gem, ImagePlus, Palette, Plane, Plus, Quote, Sparkles, Target } from "lucide-react";
-import { useLife, uid, type LifeData } from "@/lib/life-store";
+import { useLife, uid, type Goal, type LifeData, type VisionImportance } from "@/lib/life-store";
 import { Button, Empty, Field, Modal, RecordActions, SaveButton } from "./workspace-ui";
 import { CategoryManager } from "./record-manager";
-import { ImageUpload, MediaImage, resolveMediaUrl } from "./workspace-media";
+import { MediaImage, MultiImageUpload, resolveMediaUrl } from "./workspace-media";
 
 type BoardItem = LifeData["board"][number];
+type VisionDraft = BoardItem & { makeGoal?: boolean };
 
 const kinds = ["Dream", "Goal", "Quote", "Travel", "Career", "Luxury", "Statement"];
+const importanceOptions: VisionImportance[] = ["Low", "Medium", "High", "Very High"];
 const fallbackPhotos = [
   "linear-gradient(135deg,#f6eadf,#c9b7e8 48%,#d6a85c)",
   "linear-gradient(135deg,#f8f1e7,#b9d3d2 48%,#b68d48)",
@@ -32,7 +34,7 @@ function money(value: number, currency: string) {
 
 function boardSeed(items: BoardItem[]) {
   return items.reduce((sum, item, index) => {
-    const text = `${item.id}${item.title}${item.url}${item.quote ?? ""}`;
+    const text = `${item.id}${item.title}${item.url}${item.images?.join("") ?? ""}${item.phrase ?? ""}${item.quote ?? ""}`;
     return sum + Array.from(text).reduce((s, char) => s + char.charCodeAt(0), 0) * (index + 1);
   }, 19);
 }
@@ -152,14 +154,29 @@ function itemProgress(item: BoardItem) {
   return 0;
 }
 
+function visionImages(item: Pick<BoardItem, "images" | "url">) {
+  return (item.images?.length ? item.images : item.url ? [item.url] : []).slice(0, 6);
+}
+
+function visionPhrase(item: Pick<BoardItem, "phrase" | "quote">) {
+  return (item.phrase ?? item.quote ?? "").trim();
+}
+
+function hasVisual(item: Pick<BoardItem, "images" | "url" | "phrase" | "quote">) {
+  return visionImages(item).length > 0 || visionPhrase(item).length > 0;
+}
+
 function linkedProgress(item: BoardItem, data: LifeData) {
   const goal = item.goalId ? data.goals.find(g => g.id === item.goalId) : null;
   return goal ? goal.progress : itemProgress(item);
 }
 
-function VisionImage({ item, index, progress }: { item: BoardItem; index: number; progress: number }) {
-  return <div className="le-vision-photo" style={{ "--vision-progress": `${Math.round(progress)}%`, "--vision-fallback": fallbackPhotos[index % fallbackPhotos.length] } as React.CSSProperties}>
-    {item.url ? <MediaImage source={item.url} alt={item.title} /> : <div className="le-vision-photo-empty"><Sparkles size={22} /><span>{item.kind ?? "Dream"}</span></div>}
+function VisionCollage({ item, index, progress }: { item: BoardItem; index: number; progress: number }) {
+  const images = visionImages(item);
+  const phrase = visionPhrase(item);
+  return <div className={`le-vision-photo le-vision-collage le-vision-collage-${Math.max(1, images.length)}`} style={{ "--vision-progress": `${Math.round(progress)}%`, "--vision-fallback": fallbackPhotos[index % fallbackPhotos.length] } as React.CSSProperties}>
+    {images.length ? <div className="le-vision-collage-grid">{images.map((source, imageIndex) => <figure key={`${source}-${imageIndex}`}><MediaImage source={source} alt={`${item.title} image ${imageIndex + 1}`} /></figure>)}</div> : <div className="le-vision-photo-empty"><Sparkles size={22} /><span>{phrase || item.kind || "Dream"}</span></div>}
+    {phrase && <div className={`le-vision-phrase le-vision-phrase-${index % 4}`}><span>{phrase}</span></div>}
   </div>;
 }
 
@@ -170,22 +187,24 @@ function VisionCard({ item, index, data, edit, remove }: { item: BoardItem; inde
   const saved = Number(item.saved ?? 0);
   const currency = item.currency || data.currency;
   const itemKind = (item.kind ?? "").toLowerCase();
-  const isQuote = itemKind === "quote" || itemKind === "statement";
-  const milestone = progress >= 75;
-  return <article className={`le-vision-card le-vision-card-${index % 6} ${isQuote ? "is-quote" : ""} ${milestone ? "is-glowing" : ""} ${flipped ? "is-flipped" : ""}`}>
+  const isQuote = (itemKind === "quote" || itemKind === "statement") && !visionImages(item).length;
+  const achieved = Boolean(item.goalId && progress >= 100);
+  const milestone = progress >= 75 && !achieved;
+  return <article className={`le-vision-card le-vision-card-${index % 6} le-vision-importance-${(item.importance ?? "Medium").toLowerCase().replace(" ", "-")} ${isQuote ? "is-quote" : ""} ${milestone ? "is-glowing" : ""} ${achieved ? "is-achieved" : ""} ${flipped ? "is-flipped" : ""}`}>
     <button type="button" className="le-vision-flip" aria-pressed={flipped} aria-label={`${flipped ? "Show image for" : "Show notes for"} ${item.title}`} onClick={() => setFlipped(value => !value)}>
       <div className="le-vision-face le-vision-front">
-        {isQuote ? <div className="le-vision-quote-card"><Quote size={24} /><blockquote>{item.quote || item.notes || item.title}</blockquote><p>{item.title}</p></div> : <VisionImage item={item} index={index} progress={progress} />}
+        {isQuote ? <div className="le-vision-quote-card"><Quote size={24} /><blockquote>{visionPhrase(item) || item.notes || item.title}</blockquote><p>{item.title}</p></div> : <VisionCollage item={item} index={index} progress={progress} />}
       </div>
       <div className="le-vision-face le-vision-back">
-        <span className="le-vision-tag">{item.category ?? item.kind ?? "Dream"}</span>
+        <span className="le-vision-tag">{item.importance ?? "Medium"} importance</span>
         <h3>{item.title}</h3>
-        {item.quote && <blockquote className="le-vision-statement">{item.quote}</blockquote>}
+        {visionPhrase(item) && <blockquote className="le-vision-statement">{visionPhrase(item)}</blockquote>}
         {item.notes && <p>{item.notes}</p>}
         {target > 0 && <div className="le-vision-money"><span>Saved {money(saved, currency)}</span><strong>{money(target, currency)}</strong></div>}
         {item.goalId && <small>Connected to {data.goals.find(g => g.id === item.goalId)?.title ?? "removed goal"}</small>}
       </div>
     </button>
+    {achieved && <div className="le-vision-achieved"><CheckMark />Achieved</div>}
     <div className="le-vision-card-tools"><RecordActions name={item.title} edit={edit} remove={remove} /></div>
     {(target > 0 || item.goalId) && <div className="le-vision-orbit" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} style={{ "--vision-progress": `${Math.round(progress)}%` } as React.CSSProperties}>
       <span>{Math.round(progress)}%</span>
@@ -193,9 +212,13 @@ function VisionCard({ item, index, data, edit, remove }: { item: BoardItem; inde
   </article>;
 }
 
+function CheckMark() {
+  return <span aria-hidden="true">✓</span>;
+}
+
 export function VisionWorkspace({ goalsView }: { goalsView?: ReactNode }) {
   const { data, update } = useLife();
-  const [draft, setDraft] = useState<BoardItem | null>(null);
+  const [draft, setDraft] = useState<VisionDraft | null>(null);
   const [view, setView] = useState<"vision" | "goals">("vision");
   const [category, setCategory] = useState("All");
   const [settings, setSettings] = useState(false);
@@ -203,9 +226,36 @@ export function VisionWorkspace({ goalsView }: { goalsView?: ReactNode }) {
   const [exporting, setExporting] = useState(false);
   const [exportFormat, setExportFormat] = useState<"png"|"jpeg">("png");
   const [exportStatus, setExportStatus] = useState("");
+  const [saveError, setSaveError] = useState("");
   const categories = useMemo(() => ["All", ...new Set([...data.visionCategories, ...data.board.map(b => b.category ?? "Other")])], [data.board, data.visionCategories]);
   const visible = data.board.filter(b => category === "All" || (b.category ?? "Other") === category);
-  const add = (kind = "Dream") => setDraft({ id: uid(), title: "", url: "", notes: "", category: data.visionCategories.includes(kind) ? kind : data.visionCategories[0] ?? "Dreams", goalId: "", kind, target: 0, saved: 0, currency: data.currency, quote: "", coachNote: "" });
+  const add = (kind = "Dream") => { setSaveError(""); setDraft({ id: uid(), title: "", url: "", images: [], notes: "", category: data.visionCategories.includes(kind) ? kind : data.visionCategories[0] ?? "Dreams", goalId: "", kind, target: 0, saved: 0, currency: data.currency, quote: "", phrase: "", importance: "Medium", coachNote: "", makeGoal: false }); };
+  function saveVision() {
+    if (!draft) return;
+    const images = visionImages(draft);
+    const phrase = visionPhrase(draft);
+    if (!images.length && !phrase) {
+      setSaveError("Add at least one image or a word/phrase to save this vision.");
+      return;
+    }
+    const clean: BoardItem = { ...draft, title: draft.title.trim(), images, url: images[0] ?? "", phrase, quote: phrase, importance: draft.importance ?? "Medium" };
+    update(d => {
+      let goals = d.goals;
+      let item = clean;
+      if (draft.makeGoal && !item.goalId) {
+        const goalId = uid();
+        const pillar = activeCategoryAsPillar(d, item.category);
+        const goal: Goal = { id: goalId, title: item.title, horizon: "Annual", parent: "", pillars: pillar ? [pillar] : [], progress: 0, archived: false, due: "", notes: item.notes ?? "", visionBoard: { enabled: true, images, phrase, importance: item.importance ?? "Medium" } };
+        goals = [...goals, goal];
+        item = { ...item, goalId };
+      } else if (item.goalId) {
+        goals = goals.map(goal => goal.id === item.goalId ? { ...goal, title: item.title || goal.title, notes: item.notes ?? goal.notes, visionBoard: { enabled: true, images, phrase, importance: item.importance ?? "Medium" } } : goal);
+      }
+      return { ...d, goals, board: [...d.board.filter(b => b.id !== item.id), item] };
+    });
+    setDraft(null);
+    setSaveError("");
+  }
   const loadImage = async (source: string) => {
     if (!source) return null;
     try {
@@ -319,10 +369,10 @@ export function VisionWorkspace({ goalsView }: { goalsView?: ReactNode }) {
       ctx.fillRect(0, 0, width, height);
       const seed = boardSeed(items);
       const tiles = collageTiles(items.length, width, height);
-      const images = await Promise.all(items.map(item => item.url ? loadImage(item.url) : Promise.resolve(null)));
+      const images = await Promise.all(items.map(item => visionImages(item)[0] ? loadImage(visionImages(item)[0]) : Promise.resolve(null)));
       for (let i = 0; i < items.length; i += 1) {
         const item = items[i];
-        const hasTextOnlyIntent = !item.url || ["quote", "statement"].includes((item.kind ?? "").toLowerCase());
+        const hasTextOnlyIntent = !visionImages(item).length || ["quote", "statement"].includes((item.kind ?? "").toLowerCase());
         if (hasTextOnlyIntent && !images[i]) drawQuoteTile(ctx, item, tiles[i], i, seed);
         else drawImageTile(ctx, item, images[i], tiles[i], i, seed);
       }
@@ -370,13 +420,14 @@ export function VisionWorkspace({ goalsView }: { goalsView?: ReactNode }) {
       </div>
       <Empty title="Start with one image, quote, or dream purchase." action="Create vision item" onClick={() => add()} />
     </div> : <div className="le-vision-canvas" aria-label="Vision board canvas">
-      {visible.map((item, index) => <VisionCard key={item.id} item={item} index={index} data={data} edit={() => setDraft(item)} remove={() => update(d => ({ ...d, board: d.board.filter(x => x.id !== item.id) }))} />)}
+      {visible.map((item, index) => <VisionCard key={item.id} item={item} index={index} data={data} edit={() => { setSaveError(""); setDraft({ ...item, images: visionImages(item), phrase: visionPhrase(item), importance: item.importance ?? "Medium" }); }} remove={() => update(d => ({ ...d, board: d.board.filter(x => x.id !== item.id), goals: item.goalId ? d.goals.map(goal => goal.id === item.goalId ? { ...goal, visionBoard: { ...(goal.visionBoard ?? { images: [], phrase: "", importance: "Medium" as VisionImportance }), enabled: false } } : goal) : d.goals }))} />)}
     </div>}</>}
-    {draft && <Modal title="Vision item" close={() => setDraft(null)}><form onSubmit={e => { e.preventDefault(); update(d => ({ ...d, board: [...d.board.filter(b => b.id !== draft.id), draft] })); setDraft(null); }}>
+    {draft && <Modal title="Vision item" close={() => setDraft(null)}><form onSubmit={e => { e.preventDefault(); saveVision(); }}>
       <Field label="Type"><select value={draft.kind ?? "Dream"} onChange={e => setDraft({ ...draft, kind: e.target.value })}>{kinds.map(kind => <option key={kind}>{kind}</option>)}</select></Field>
-      <Field label="Title"><input required value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} placeholder="Bali 2027, Paris Trip, New Apartment" /></Field>
+      <Field label="Title or concept"><input required value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} placeholder="Bali 2027, Paris Trip, New Apartment" /></Field>
       <Field label="Category"><select value={draft.category ?? "Other"} onChange={e => setDraft({ ...draft, category: e.target.value })}>{[...new Set([...data.visionCategories, draft.category ?? "Other"])].map(c => <option key={c}>{c}</option>)}</select></Field>
-      <Field label="Vision statement or quote"><textarea rows={3} value={draft.quote ?? ""} onChange={e => setDraft({ ...draft, quote: e.target.value })} placeholder="My future self deserves this." /></Field>
+      <Field label="Word or phrase"><input maxLength={60} value={draft.phrase ?? draft.quote ?? ""} onChange={e => setDraft({ ...draft, phrase: e.target.value, quote: e.target.value })} placeholder="Soft Life, Peace, My Future Home" /></Field>
+      <Field label="Importance"><select value={draft.importance ?? "Medium"} onChange={e => setDraft({ ...draft, importance: e.target.value as VisionImportance })}>{importanceOptions.map(option => <option key={option}>{option}</option>)}</select></Field>
       <Field label="Motivation notes"><textarea rows={4} value={draft.notes ?? ""} onChange={e => setDraft({ ...draft, notes: e.target.value })} placeholder="Why this dream matters to you." /></Field>
       <div className="le-grid-two">
         <Field label="Target amount"><input type="number" min="0" value={Number(draft.target ?? 0) > 0 ? draft.target : ""} placeholder="0" onChange={e => setDraft({ ...draft, target: e.target.value === "" ? 0 : Number(e.target.value) })} /></Field>
@@ -384,11 +435,16 @@ export function VisionWorkspace({ goalsView }: { goalsView?: ReactNode }) {
       </div>
       <Field label="Currency"><select value={draft.currency ?? data.currency} onChange={e => setDraft({ ...draft, currency: e.target.value })}>{data.currencies.map(c => <option key={c.code} value={c.code}>{c.code} · {c.name}</option>)}</select></Field>
       <Field label="Future goal"><select value={draft.goalId ?? ""} onChange={e => setDraft({ ...draft, goalId: e.target.value })}><option value="">No linked goal</option>{data.goals.filter(g => !g.archived || g.id === draft.goalId).map(g => <option key={g.id} value={g.id}>{g.title}</option>)}</select></Field>
+      {!draft.goalId && <label className="le-check-row"><input type="checkbox" checked={Boolean(draft.makeGoal)} onChange={e => setDraft({ ...draft, makeGoal: e.target.checked })} />Make this a Goal</label>}
       <Field label="AI dream coach note"><textarea rows={3} value={draft.coachNote ?? ""} onChange={e => setDraft({ ...draft, coachNote: e.target.value })} placeholder="At your current pace, you will reach this goal early." /></Field>
-      <ImageUpload value={draft.url} onBusy={setUploading} onChange={url => setDraft(d => d ? { ...d, url } : d)} />
-      <Field label="Or image URL (https)"><input type="url" pattern="https://.*" value={draft.url.startsWith("https://") ? draft.url : ""} onChange={e => setDraft({ ...draft, url: e.target.value })} /></Field>
-      {draft.url && <Button secondary onClick={() => setDraft({ ...draft, url: "" })}><ImagePlus size={16} />Remove image</Button>}
+      <MultiImageUpload values={visionImages(draft)} onBusy={setUploading} onChange={images => setDraft(d => d ? { ...d, images, url: images[0] ?? "" } : d)} />
+      <Field label="Or image URL (https)"><input type="url" pattern="https://.*" value={draft.url.startsWith("https://") ? draft.url : ""} onChange={e => { const next = e.target.value; setDraft({ ...draft, url: next, images: next ? [next, ...visionImages(draft).filter(source => source !== draft.url)].slice(0, 6) : visionImages(draft).filter(source => source !== draft.url) }); }} /></Field>
+      {saveError && <p role="alert" className="le-error">{saveError}</p>}
       <SaveButton disabled={uploading}>Save vision item</SaveButton>
     </form></Modal>}
   </section>;
+}
+
+function activeCategoryAsPillar(data: LifeData, category?: string) {
+  return data.lifePillars.includes(category ?? "") ? category : data.lifePillars[0] ?? "";
 }

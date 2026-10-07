@@ -25,7 +25,9 @@ export const uid = () => {
 };
 export function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 export const configured = () => !isDemoMode && Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-export type Goal = { id: string; title: string; horizon: string; parent: string; pillars: string[]; progress: number; archived: boolean; due: string; notes: string };
+export type VisionImportance = "Low" | "Medium" | "High" | "Very High";
+export type VisionBoardLink = { enabled: boolean; images: string[]; phrase: string; importance: VisionImportance };
+export type Goal = { id: string; title: string; horizon: string; parent: string; pillars: string[]; progress: number; archived: boolean; due: string; notes: string; visionBoard?: VisionBoardLink };
 export type Habit = { id: string; name: string; direction: "build" | "quit"; dates: string[]; start: string; setbacks: { date: string; note: string }[] };
 export type Task = { id: string; title: string; date: string; time: string; minutes: number; pillar: string; done: boolean; kind?: "time-block" | "todo" };
 export type Workout = { id: string; name: string; category: string; warmup: string; cooldown?: string; notes?: string; archived?: boolean; exercises: (Omit<Exercise, "category" | "seconds" | "notes"> & Partial<Pick<Exercise, "category" | "seconds" | "notes">>)[] };
@@ -43,7 +45,7 @@ export type LifeData = ExtraData & RefinementData & {
   transactions: { id: string; title: string; category: string; amount: number; type: string; classification?: Classification | ""; currency: string; date: string; plannedDate?: string; dueDate?: string; paid?: boolean; paidDate?: string; status?: "Upcoming" | "Paid" | "Missed"; recurring?: boolean; recurrenceFrequency?: "Weekly" | "Biweekly" | "Monthly" | "Quarterly" | "Yearly"; recurrenceInterval?: number; recurrenceStart?: string; recurrenceEnd?: string }[];
   workoutTypes: string[]; workouts: Workout[]; workoutLogs: { id: string; name: string; date: string; minutes: number; volume: number; exercises?: Workout["exercises"]; notes?: string }[];
   focusTypes: string[]; focus: { id: string; name: string; seconds: number; date: string }[];
-  board: { id: string; title: string; url: string; category?: string; notes?: string; goalId?: string; kind?: string; target?: number; saved?: number; currency?: string; quote?: string; coachNote?: string }[];
+  board: { id: string; title: string; url: string; images?: string[]; category?: string; notes?: string; goalId?: string; kind?: string; target?: number; saved?: number; currency?: string; quote?: string; phrase?: string; importance?: VisionImportance; coachNote?: string }[];
   notificationSettings: NotificationSettings;
 };
 export function emptyData(): LifeData {
@@ -66,7 +68,12 @@ function withDefaults(raw: Partial<LifeData>): LifeData {
     categories: { ...base.notificationSettings.categories, ...raw.notificationSettings.categories },
     reminderTimes: { ...base.notificationSettings.reminderTimes, ...raw.notificationSettings.reminderTimes }
   } : base.notificationSettings;
-  return { ...base, ...raw, lifePillars, spendingLimits: { ...base.spendingLimits, ...raw.spendingLimits, categories: { ...base.spendingLimits.categories, ...raw.spendingLimits?.categories } }, notificationSettings };
+  const goals = (raw.goals ?? base.goals).map(goal => ({ ...goal, visionBoard: goal.visionBoard ? { enabled: Boolean(goal.visionBoard.enabled), images: goal.visionBoard.images?.slice(0, 6) ?? [], phrase: goal.visionBoard.phrase ?? "", importance: goal.visionBoard.importance ?? "Medium" } : undefined }));
+  const board = (raw.board ?? base.board).map(item => {
+    const images = (item.images?.length ? item.images : item.url ? [item.url] : []).slice(0, 6);
+    return { ...item, url: item.url ?? images[0] ?? "", images, phrase: item.phrase ?? item.quote ?? "", importance: item.importance ?? "Medium" };
+  });
+  return { ...base, ...raw, goals, board, lifePillars, spendingLimits: { ...base.spendingLimits, ...raw.spendingLimits, categories: { ...base.spendingLimits.categories, ...raw.spendingLimits?.categories } }, notificationSettings };
 }
 type Store = { data: LifeData; update: (fn: (data: LifeData) => LifeData) => void; ready: boolean; status: string; error: string; retry: () => void; account: boolean; back: () => void; undo: () => void; undoLabel: string; dismissUndo: () => void; offerUndo: (label: string, restore: (data: LifeData) => LifeData) => void };
 const Context = createContext<Store | null>(null);
