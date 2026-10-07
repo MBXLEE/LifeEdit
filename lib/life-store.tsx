@@ -29,13 +29,15 @@ export type Goal = { id: string; title: string; horizon: string; parent: string;
 export type Habit = { id: string; name: string; direction: "build" | "quit"; dates: string[]; start: string; setbacks: { date: string; note: string }[] };
 export type Task = { id: string; title: string; date: string; time: string; minutes: number; pillar: string; done: boolean; kind?: "time-block" | "todo" };
 export type Workout = { id: string; name: string; category: string; warmup: string; cooldown?: string; notes?: string; archived?: boolean; exercises: (Omit<Exercise, "category" | "seconds" | "notes"> & Partial<Pick<Exercise, "category" | "seconds" | "notes">>)[] };
+export type JournalPhoto = { id: string; source: string; order: number; name?: string; createdAt: string };
 export type LifeData = ExtraData & RefinementData & {
   version: 2; name: string; theme: Theme; onboarded: boolean;
   assessment: Record<string, number>; areas: string[]; priorities: string[];
   identity: string; vision: string; mission: string; lifestyle: string;
+  lifePillars: string[];
   goals: Goal[]; habits: Habit[]; tasks: Task[];
   templates: { id: string; name: string; pillar: string; prompts: string[] }[];
-  journals: { id: string; title: string; template: string; pillar: string; body: string; date: string }[];
+  journals: { id: string; title: string; template: string; pillar: string; body: string; date: string; photos?: JournalPhoto[] }[];
   currencies: { code: string; name: string; symbol: string }[]; currency: string;
   categories: string[]; budgets: { id: string; category: string; amount: number; currency: string; month: string }[];
   transactions: { id: string; title: string; category: string; amount: number; type: string; classification?: Classification | ""; currency: string; date: string; plannedDate?: string; dueDate?: string; paid?: boolean; paidDate?: string; status?: "Upcoming" | "Paid" | "Missed"; recurring?: boolean; recurrenceFrequency?: "Weekly" | "Biweekly" | "Monthly" | "Quarterly" | "Yearly"; recurrenceInterval?: number; recurrenceStart?: string; recurrenceEnd?: string }[];
@@ -45,7 +47,7 @@ export type LifeData = ExtraData & RefinementData & {
   notificationSettings: NotificationSettings;
 };
 export function emptyData(): LifeData {
-  return { ...extraDefaults(), ...refinementDefaults(), version: 2, name: "", theme: "Ocean", onboarded: false, assessment: {}, areas: [...pillars], priorities: [], identity: "", vision: "", mission: "", lifestyle: "", goals: [], habits: [], tasks: [],
+  return { ...extraDefaults(), ...refinementDefaults(), version: 2, name: "", theme: "Ocean", onboarded: false, assessment: {}, areas: [...pillars], priorities: [], identity: "", vision: "", mission: "", lifestyle: "", lifePillars: [...pillars], goals: [], habits: [], tasks: [],
     templates: pillars.map((pillar, i) => ({ id: `pillar-${i}`, name: pillar, pillar, prompts: [
       ["What financial decision did I make today?", "Did I stay within budget?"],
       ["How did I care for my body today?", "What health goal did I work towards?"],
@@ -57,13 +59,14 @@ export function emptyData(): LifeData {
 }
 function withDefaults(raw: Partial<LifeData>): LifeData {
   const base = emptyData();
+  const lifePillars = Array.isArray(raw.lifePillars) && raw.lifePillars.length ? raw.lifePillars : base.lifePillars;
   const notificationSettings = raw.notificationSettings ? {
     ...base.notificationSettings,
     ...raw.notificationSettings,
     categories: { ...base.notificationSettings.categories, ...raw.notificationSettings.categories },
     reminderTimes: { ...base.notificationSettings.reminderTimes, ...raw.notificationSettings.reminderTimes }
   } : base.notificationSettings;
-  return { ...base, ...raw, spendingLimits: { ...base.spendingLimits, ...raw.spendingLimits, categories: { ...base.spendingLimits.categories, ...raw.spendingLimits?.categories } }, notificationSettings };
+  return { ...base, ...raw, lifePillars, spendingLimits: { ...base.spendingLimits, ...raw.spendingLimits, categories: { ...base.spendingLimits.categories, ...raw.spendingLimits?.categories } }, notificationSettings };
 }
 type Store = { data: LifeData; update: (fn: (data: LifeData) => LifeData) => void; ready: boolean; status: string; error: string; retry: () => void; account: boolean; back: () => void; undo: () => void; undoLabel: string; dismissUndo: () => void; offerUndo: (label: string, restore: (data: LifeData) => LifeData) => void };
 const Context = createContext<Store | null>(null);

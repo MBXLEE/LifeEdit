@@ -1,6 +1,6 @@
 "use client";
-import { useMemo, useState } from "react";
-import { BrainCircuit, Download, Gem, ImagePlus, Palette, Plane, Plus, Quote, Sparkles } from "lucide-react";
+import { useMemo, useState, type ReactNode } from "react";
+import { Download, Gem, ImagePlus, Palette, Plane, Plus, Quote, Sparkles, Target } from "lucide-react";
 import { useLife, uid, type LifeData } from "@/lib/life-store";
 import { Button, Empty, Field, Modal, RecordActions, SaveButton } from "./workspace-ui";
 import { CategoryManager } from "./record-manager";
@@ -16,9 +16,134 @@ const fallbackPhotos = [
   "linear-gradient(135deg,#f7efe4,#f2c6b6 45%,#8ba69a)",
   "linear-gradient(135deg,#fbf4e9,#d2c3aa 42%,#b49458)",
 ];
+const exportPalettes = [
+  { bg: "#fbf4ec", ink: "#2f2930", accent: "#8f1f1c" },
+  { bg: "#f4efe8", ink: "#221f1f", accent: "#9a6b31" },
+  { bg: "#fdfbf6", ink: "#42282c", accent: "#7b1420" },
+  { bg: "#efe8f4", ink: "#2d2632", accent: "#7c6590" },
+  { bg: "#e9f0eb", ink: "#22342b", accent: "#55745f" },
+  { bg: "#871414", ink: "#fff8ef", accent: "#fff8ef" },
+];
+type CollageTile = { x: number; y: number; w: number; h: number };
 
 function money(value: number, currency: string) {
   return new Intl.NumberFormat(undefined, { style: "currency", currency, maximumFractionDigits: 0 }).format(value || 0);
+}
+
+function boardSeed(items: BoardItem[]) {
+  return items.reduce((sum, item, index) => {
+    const text = `${item.id}${item.title}${item.url}${item.quote ?? ""}`;
+    return sum + Array.from(text).reduce((s, char) => s + char.charCodeAt(0), 0) * (index + 1);
+  }, 19);
+}
+
+function seeded(seed: number, index: number) {
+  const x = Math.sin(seed * 12.9898 + index * 78.233) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, Math.min(r, w / 2, h / 2));
+}
+
+function drawCover(ctx: CanvasRenderingContext2D, image: HTMLImageElement, tile: CollageTile) {
+  const scale = Math.max(tile.w / image.naturalWidth, tile.h / image.naturalHeight);
+  const w = image.naturalWidth * scale;
+  const h = image.naturalHeight * scale;
+  ctx.drawImage(image, tile.x + (tile.w - w) / 2, tile.y + (tile.h - h) / 2, w, h);
+}
+
+function linesFor(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxLines: number) {
+  const words = text.replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
+  const lines: string[] = [];
+  let line = "";
+  for (const word of words) {
+    const next = line ? `${line} ${word}` : word;
+    if (ctx.measureText(next).width <= maxWidth) {
+      line = next;
+      continue;
+    }
+    if (line) lines.push(line);
+    line = word;
+    while (ctx.measureText(line).width > maxWidth && line.length > 1) {
+      let end = line.length;
+      while (end > 1 && ctx.measureText(`${line.slice(0, end)}…`).width > maxWidth) end -= 1;
+      lines.push(`${line.slice(0, end)}…`);
+      line = line.slice(end);
+      if (lines.length >= maxLines) break;
+    }
+    if (lines.length >= maxLines) break;
+  }
+  if (line && lines.length < maxLines) lines.push(line);
+  if (lines.length > maxLines) lines.length = maxLines;
+  return lines;
+}
+
+function fitText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxHeight: number, options: { max: number; min: number; family: string; weight?: string; italic?: boolean; maxLines: number }) {
+  for (let size = options.max; size >= options.min; size -= 2) {
+    const style = `${options.italic ? "italic " : ""}${options.weight ? `${options.weight} ` : ""}${size}px ${options.family}`;
+    ctx.font = style;
+    const lineHeight = size * 1.08;
+    const lines = linesFor(ctx, text, maxWidth, options.maxLines);
+    if (lines.length * lineHeight <= maxHeight) return { font: style, lines, lineHeight };
+  }
+  const style = `${options.italic ? "italic " : ""}${options.weight ? `${options.weight} ` : ""}${options.min}px ${options.family}`;
+  ctx.font = style;
+  const lineHeight = options.min * 1.08;
+  return { font: style, lines: linesFor(ctx, text, maxWidth, options.maxLines), lineHeight };
+}
+
+function collageRows(count: number) {
+  if (count <= 0) return [];
+  if (count === 1) return [1];
+  if (count === 2) return [1, 1];
+  if (count === 3) return [1, 2];
+  if (count === 4) return [1, 1, 2];
+  const rows: number[] = [];
+  let remaining = count;
+  const pattern = count <= 8 ? [3, 2, 3] : count <= 15 ? [4, 3, 4, 2, 3] : [4, 5, 3, 4, 5, 3];
+  let step = 0;
+  while (remaining > 0) {
+    let take = Math.min(pattern[step % pattern.length], remaining);
+    if (remaining - take === 1 && take > 2) take -= 1;
+    rows.push(take);
+    remaining -= take;
+    step += 1;
+  }
+  return rows;
+}
+
+function collageTiles(count: number, width: number, height: number) {
+  const margin = 10;
+  const gap = count <= 4 ? 8 : count <= 12 ? 6 : 4;
+  const rows = collageRows(count);
+  const availableHeight = height - margin * 2 - gap * Math.max(0, rows.length - 1);
+  const baseHeights = rows.map(row => row === 1 ? 1.55 : row === 2 ? 1.04 : row === 3 ? .78 : row === 4 ? .62 : .52);
+  const totalBase = baseHeights.reduce((sum, value) => sum + value, 0) || 1;
+  const tiles: CollageTile[] = [];
+  let y = margin;
+  rows.forEach((row, rowIndex) => {
+    const rowHeight = availableHeight * (baseHeights[rowIndex] / totalBase);
+    const availableWidth = width - margin * 2 - gap * Math.max(0, row - 1);
+    const templates: Record<number, number[][]> = {
+      1: [[1]],
+      2: [[.58, .42], [.42, .58]],
+      3: [[.32, .43, .25], [.46, .24, .3], [.27, .31, .42]],
+      4: [[.23, .31, .21, .25], [.33, .2, .27, .2], [.2, .26, .34, .2]],
+      5: [[.18, .25, .18, .22, .17], [.24, .18, .2, .16, .22]],
+    };
+    const ratios = templates[row][rowIndex % templates[row].length];
+    let x = margin;
+    ratios.forEach((ratio, index) => {
+      const isLast = index === ratios.length - 1;
+      const w = isLast ? width - margin - x : availableWidth * ratio;
+      tiles.push({ x, y, w, h: rowHeight });
+      x += w + gap;
+    });
+    y += rowHeight + gap;
+  });
+  return tiles;
 }
 
 function itemProgress(item: BoardItem) {
@@ -39,6 +164,7 @@ function VisionImage({ item, index, progress }: { item: BoardItem; index: number
 }
 
 function VisionCard({ item, index, data, edit, remove }: { item: BoardItem; index: number; data: LifeData; edit: () => void; remove: () => void }) {
+  const [flipped, setFlipped] = useState(false);
   const progress = linkedProgress(item, data);
   const target = Number(item.target ?? 0);
   const saved = Number(item.saved ?? 0);
@@ -46,45 +172,40 @@ function VisionCard({ item, index, data, edit, remove }: { item: BoardItem; inde
   const itemKind = (item.kind ?? "").toLowerCase();
   const isQuote = itemKind === "quote" || itemKind === "statement";
   const milestone = progress >= 75;
-  return <article className={`le-vision-card le-vision-card-${index % 6} ${isQuote ? "is-quote" : ""} ${milestone ? "is-glowing" : ""}`}>
-    {isQuote ? <div className="le-vision-quote-card"><Quote size={24} /><blockquote>{item.quote || item.notes || item.title}</blockquote><p>{item.title}</p></div> : <VisionImage item={item} index={index} progress={progress} />}
-    <div className="le-vision-card-body">
-      <div className="le-row">
-        <span className="le-vision-tag">{item.category ?? item.kind ?? "Dream"}</span>
-        <RecordActions name={item.title} edit={edit} remove={remove} />
+  return <article className={`le-vision-card le-vision-card-${index % 6} ${isQuote ? "is-quote" : ""} ${milestone ? "is-glowing" : ""} ${flipped ? "is-flipped" : ""}`}>
+    <button type="button" className="le-vision-flip" aria-pressed={flipped} aria-label={`${flipped ? "Show image for" : "Show notes for"} ${item.title}`} onClick={() => setFlipped(value => !value)}>
+      <div className="le-vision-face le-vision-front">
+        {isQuote ? <div className="le-vision-quote-card"><Quote size={24} /><blockquote>{item.quote || item.notes || item.title}</blockquote><p>{item.title}</p></div> : <VisionImage item={item} index={index} progress={progress} />}
       </div>
-      <h3>{item.title}</h3>
-      {item.quote && !isQuote && <blockquote className="le-vision-statement">{item.quote}</blockquote>}
-      {item.notes && !isQuote && <p>{item.notes}</p>}
-      {target > 0 && <div className="le-vision-money">
-        <span>Saved {money(saved, currency)}</span>
-        <strong>{money(target, currency)}</strong>
-      </div>}
-      {(target > 0 || item.goalId) && <div className="le-vision-orbit" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} style={{ "--vision-progress": `${Math.round(progress)}%` } as React.CSSProperties}>
-        <span>{Math.round(progress)}%</span>
-      </div>}
-      {item.goalId && <small>Connected to {data.goals.find(g => g.id === item.goalId)?.title ?? "removed goal"}</small>}
-    </div>
+      <div className="le-vision-face le-vision-back">
+        <span className="le-vision-tag">{item.category ?? item.kind ?? "Dream"}</span>
+        <h3>{item.title}</h3>
+        {item.quote && <blockquote className="le-vision-statement">{item.quote}</blockquote>}
+        {item.notes && <p>{item.notes}</p>}
+        {target > 0 && <div className="le-vision-money"><span>Saved {money(saved, currency)}</span><strong>{money(target, currency)}</strong></div>}
+        {item.goalId && <small>Connected to {data.goals.find(g => g.id === item.goalId)?.title ?? "removed goal"}</small>}
+      </div>
+    </button>
+    <div className="le-vision-card-tools"><RecordActions name={item.title} edit={edit} remove={remove} /></div>
+    {(target > 0 || item.goalId) && <div className="le-vision-orbit" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} style={{ "--vision-progress": `${Math.round(progress)}%` } as React.CSSProperties}>
+      <span>{Math.round(progress)}%</span>
+    </div>}
   </article>;
 }
 
-export function VisionWorkspace() {
+export function VisionWorkspace({ goalsView }: { goalsView?: ReactNode }) {
   const { data, update } = useLife();
   const [draft, setDraft] = useState<BoardItem | null>(null);
+  const [view, setView] = useState<"vision" | "goals">("vision");
   const [category, setCategory] = useState("All");
   const [settings, setSettings] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [exportFormat, setExportFormat] = useState<"png"|"jpeg">("png");
   const [exportStatus, setExportStatus] = useState("");
   const categories = useMemo(() => ["All", ...new Set([...data.visionCategories, ...data.board.map(b => b.category ?? "Other")])], [data.board, data.visionCategories]);
   const visible = data.board.filter(b => category === "All" || (b.category ?? "Other") === category);
-  const savingsDream = data.savingsGoals.find(g => !g.archived) ?? null;
-  const featured = visible[0] ?? data.board[0] ?? null;
-  const savedTotal = data.transactions.filter(t => t.type === "Savings").reduce((sum, t) => sum + Number(t.amount || 0), 0);
-  const whyTitle = featured?.title || savingsDream?.title || data.vision || "the life you are building";
-  const closer = savingsDream ? money(savingsDream.saved, savingsDream.currency) : money(savedTotal, data.currency);
   const add = (kind = "Dream") => setDraft({ id: uid(), title: "", url: "", notes: "", category: data.visionCategories.includes(kind) ? kind : data.visionCategories[0] ?? "Dreams", goalId: "", kind, target: 0, saved: 0, currency: data.currency, quote: "", coachNote: "" });
-  const coach = featured?.coachNote || (savingsDream ? `At this pace, every contribution is turning ${savingsDream.title} from a someday idea into a dated plan.` : "Choose one small money move today and let it serve the version of you on this board.");
   const loadImage = async (source: string) => {
     if (!source) return null;
     try {
@@ -98,79 +219,149 @@ export function VisionWorkspace() {
       });
     } catch { return null; }
   };
-  const wrap = (ctx: CanvasRenderingContext2D, text: string, x: number, y: number, width: number, lineHeight: number, maxLines: number) => {
-    const words = text.split(/\s+/).filter(Boolean); let line = ""; let lines = 0;
-    for (const word of words) {
-      const test = line ? `${line} ${word}` : word;
-      if (ctx.measureText(test).width > width && line) { ctx.fillText(line, x, y); y += lineHeight; line = word; lines += 1; if (lines >= maxLines - 1) break; }
-      else line = test;
+  function drawQuoteTile(ctx: CanvasRenderingContext2D, item: BoardItem, tile: CollageTile, index: number, seed: number) {
+    const palette = exportPalettes[(index + Math.floor(seeded(seed, index) * exportPalettes.length)) % exportPalettes.length];
+    const text = item.quote || item.notes || item.title || "My future is already becoming visible.";
+    ctx.save();
+    roundedRect(ctx, tile.x, tile.y, tile.w, tile.h, 10);
+    ctx.clip();
+    ctx.fillStyle = palette.bg;
+    ctx.fillRect(tile.x, tile.y, tile.w, tile.h);
+    ctx.fillStyle = palette.accent;
+    ctx.globalAlpha = palette.bg === "#871414" ? .12 : .08;
+    ctx.fillRect(tile.x, tile.y, tile.w, Math.max(10, tile.h * .08));
+    ctx.globalAlpha = 1;
+    const pad = Math.max(18, Math.min(44, tile.w * .1));
+    const maxLines = tile.h > 420 ? 7 : tile.h > 300 ? 5 : 4;
+    const fit = fitText(ctx, text, tile.w - pad * 2, tile.h - pad * 2, { max: Math.min(86, tile.w / 5.8), min: 24, family: index % 3 === 0 ? "Georgia" : "Times New Roman", weight: index % 3 === 1 ? "700" : undefined, italic: index % 4 === 1, maxLines });
+    ctx.font = fit.font;
+    ctx.fillStyle = palette.ink;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const total = fit.lines.length * fit.lineHeight;
+    let y = tile.y + tile.h / 2 - total / 2 + fit.lineHeight / 2;
+    fit.lines.forEach(line => {
+      ctx.fillText(line, tile.x + tile.w / 2, y);
+      y += fit.lineHeight;
+    });
+    if (item.title && item.title !== text && tile.h > 270) {
+      ctx.font = "700 16px Arial";
+      ctx.globalAlpha = .72;
+      ctx.fillText(item.title.toUpperCase(), tile.x + tile.w / 2, tile.y + tile.h - pad / 1.7);
     }
-    if (line && lines < maxLines) ctx.fillText(line, x, y);
-  };
+    ctx.restore();
+  }
+  function drawImageTile(ctx: CanvasRenderingContext2D, item: BoardItem, image: HTMLImageElement | null, tile: CollageTile, index: number, seed: number) {
+    ctx.save();
+    roundedRect(ctx, tile.x, tile.y, tile.w, tile.h, 10);
+    ctx.clip();
+    if (image) {
+      drawCover(ctx, image, tile);
+    } else {
+      const gradient = ctx.createLinearGradient(tile.x, tile.y, tile.x + tile.w, tile.y + tile.h);
+      const palette = exportPalettes[(index + 2) % exportPalettes.length];
+      gradient.addColorStop(0, palette.bg);
+      gradient.addColorStop(1, index % 2 ? "#d8c2f0" : "#c9dcd4");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(tile.x, tile.y, tile.w, tile.h);
+    }
+    const caption = item.quote || (item.notes && tile.w > 245 ? item.notes : "");
+    if (caption && tile.h > 190 && tile.w > 170) {
+      const gradient = ctx.createLinearGradient(0, tile.y + tile.h * .56, 0, tile.y + tile.h);
+      gradient.addColorStop(0, "rgba(0,0,0,0)");
+      gradient.addColorStop(1, "rgba(18,15,18,.58)");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(tile.x, tile.y + tile.h * .46, tile.w, tile.h * .54);
+      const pad = Math.max(14, Math.min(24, tile.w * .08));
+      const fit = fitText(ctx, caption, tile.w - pad * 2, tile.h * .22, { max: Math.min(34, tile.w / 8), min: 15, family: "Georgia", italic: true, maxLines: tile.h > 360 ? 3 : 2 });
+      ctx.font = fit.font;
+      ctx.fillStyle = "#fffaf2";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+      let y = tile.y + tile.h - pad - (fit.lines.length - 1) * fit.lineHeight;
+      fit.lines.forEach(line => {
+        ctx.fillText(line, tile.x + pad, y);
+        y += fit.lineHeight;
+      });
+    } else if (!image && item.title) {
+      const pad = Math.max(16, Math.min(34, tile.w * .1));
+      const fit = fitText(ctx, item.title, tile.w - pad * 2, tile.h - pad * 2, { max: Math.min(58, tile.w / 5.5), min: 22, family: "Georgia", maxLines: 5 });
+      ctx.font = fit.font;
+      ctx.fillStyle = "#2e2830";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      let y = tile.y + tile.h / 2 - (fit.lines.length * fit.lineHeight) / 2 + fit.lineHeight / 2;
+      fit.lines.forEach(line => {
+        ctx.fillText(line, tile.x + tile.w / 2, y);
+        y += fit.lineHeight;
+      });
+    }
+    if (seeded(seed, index) > .78 && tile.w > 180 && tile.h > 220) {
+      ctx.globalAlpha = .08;
+      ctx.fillStyle = "#fffaf2";
+      ctx.fillRect(tile.x, tile.y, tile.w, tile.h);
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+  }
   async function exportBoard() {
     if (!data.board.length) { setExportStatus("Add at least one vision item before exporting."); return; }
+    if (exporting) return;
+    setExporting(true);
     setExportStatus("Creating collage...");
-    const items = data.board.slice(0, 9);
-    const canvas = document.createElement("canvas"); canvas.width = 1440; canvas.height = 1920;
-    const ctx = canvas.getContext("2d"); if (!ctx) return;
-    const bg = ctx.createLinearGradient(0, 0, 1440, 1920); bg.addColorStop(0, "#fffaf2"); bg.addColorStop(.5, "#f6edff"); bg.addColorStop(1, "#eef8f5"); ctx.fillStyle = bg; ctx.fillRect(0, 0, 1440, 1920);
-    ctx.fillStyle = "#2e2830"; ctx.font = "700 42px Arial"; ctx.textAlign = "center"; ctx.fillText("THE LIFE EDIT", 720, 100);
-    ctx.font = "86px Georgia"; wrap(ctx, data.vision || "My Vision Board", 720, 205, 1040, 94, 2);
-    const slots = [{x:90,y:360,w:560,h:500},{x:690,y:330,w:330,h:370},{x:1050,y:400,w:300,h:520},{x:120,y:900,w:360,h:430},{x:520,y:820,w:420,h:560},{x:980,y:960,w:340,h:390},{x:100,y:1380,w:430,h:360},{x:570,y:1420,w:310,h:320},{x:920,y:1380,w:390,h:360}];
-    for (let i = 0; i < items.length; i += 1) {
-      const item = items[i], slot = slots[i % slots.length], radius = 26;
-      ctx.save(); ctx.beginPath(); ctx.roundRect(slot.x, slot.y, slot.w, slot.h, radius); ctx.clip();
-      const image = await loadImage(item.url);
-      if (image) {
-        const scale = Math.max(slot.w / image.width, slot.h / image.height);
-        const w = image.width * scale, h = image.height * scale;
-        ctx.drawImage(image, slot.x + (slot.w - w) / 2, slot.y + (slot.h - h) / 2, w, h);
-      } else {
-        const fill = ctx.createLinearGradient(slot.x, slot.y, slot.x + slot.w, slot.y + slot.h);
-        fill.addColorStop(0, ["#f6dccd","#d8c2f0","#d7edf1"][i % 3]); fill.addColorStop(1, ["#fff4da","#e5f4ef","#fffaf2"][i % 3]);
-        ctx.fillStyle = fill; ctx.fillRect(slot.x, slot.y, slot.w, slot.h);
+    try {
+      const items = data.board;
+      const width = 1080;
+      const height = 1620;
+      const canvas = document.createElement("canvas"); canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext("2d"); if (!ctx) throw new Error("Canvas unavailable");
+      ctx.fillStyle = "#fbf7ef";
+      ctx.fillRect(0, 0, width, height);
+      const seed = boardSeed(items);
+      const tiles = collageTiles(items.length, width, height);
+      const images = await Promise.all(items.map(item => item.url ? loadImage(item.url) : Promise.resolve(null)));
+      for (let i = 0; i < items.length; i += 1) {
+        const item = items[i];
+        const hasTextOnlyIntent = !item.url || ["quote", "statement"].includes((item.kind ?? "").toLowerCase());
+        if (hasTextOnlyIntent && !images[i]) drawQuoteTile(ctx, item, tiles[i], i, seed);
+        else drawImageTile(ctx, item, images[i], tiles[i], i, seed);
       }
-      ctx.fillStyle = "rgba(46,40,48,.42)"; ctx.fillRect(slot.x, slot.y + slot.h - 150, slot.w, 150);
-      ctx.fillStyle = "#fffaf2"; ctx.textAlign = "left"; ctx.font = "700 28px Arial"; wrap(ctx, item.title, slot.x + 28, slot.y + slot.h - 98, slot.w - 56, 34, 2);
-      if (item.quote) { ctx.font = "italic 22px Georgia"; wrap(ctx, item.quote, slot.x + 28, slot.y + slot.h - 36, slot.w - 56, 26, 1); }
+      ctx.save();
+      ctx.globalAlpha = .34;
+      ctx.fillStyle = "#5b514b";
+      ctx.font = "500 13px Georgia";
+      ctx.textAlign = "right";
+      ctx.fillText("The Life Edit", width - 18, height - 18);
       ctx.restore();
+      const mime = exportFormat === "png" ? "image/png" : "image/jpeg";
+      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, mime, .95));
+      if (!blob) throw new Error("Could not create export.");
+      const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `life-edit-vision-board.${exportFormat === "png" ? "png" : "jpg"}`; a.click(); URL.revokeObjectURL(url); setExportStatus("Pinterest-style vision board downloaded.");
+    } catch {
+      setExportStatus("Could not create the collage. Check your images and try again.");
+    } finally {
+      setExporting(false);
     }
-    ctx.fillStyle = "#80602a"; ctx.font = "700 30px Arial"; ctx.textAlign = "center"; ctx.fillText("Manage every area of your life in one place. Become 1% better every day.", 720, 1820);
-    const mime = exportFormat === "png" ? "image/png" : "image/jpeg";
-    canvas.toBlob(blob => {
-      if (!blob) { setExportStatus("Could not create export."); return; }
-      const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `life-edit-vision-board.${exportFormat === "png" ? "png" : "jpg"}`; a.click(); URL.revokeObjectURL(url); setExportStatus("Vision board collage downloaded.");
-    }, mime, .94);
   }
 
   return <section className="le-vision-experience">
     <div className="le-vision-hero">
       <div>
         <p className="le-eyebrow">Vision board</p>
-        <h2>A luxury Pinterest board connected to your future.</h2>
+        <h2>A luxury board connected to your future.</h2>
         <p>Collect the places, purchases, work, words, and moments that make your financial discipline feel personal.</p>
       </div>
       <div className="le-vision-actions">
-        <select aria-label="Vision category filter" value={category} onChange={e => setCategory(e.target.value)}>{categories.map(c => <option key={c}>{c}</option>)}</select>
-        <select aria-label="Vision export format" value={exportFormat} onChange={e => setExportFormat(e.target.value as "png"|"jpeg")}><option value="png">PNG</option><option value="jpeg">JPG</option></select>
-        <Button secondary onClick={() => void exportBoard()}><Download size={16} />Export collage</Button>
-        <Button secondary onClick={() => setSettings(!settings)}><Palette size={16} />Categories</Button>
-        <Button onClick={() => add()}><Plus size={16} />Add vision item</Button>
+        {goalsView && <div className="le-vision-toggle" role="tablist" aria-label="Vision and goals view"><button type="button" role="tab" aria-selected={view === "vision"} onClick={() => setView("vision")}><ImagePlus size={15}/>Vision board</button><button type="button" role="tab" aria-selected={view === "goals"} onClick={() => setView("goals")}><Target size={15}/>Goals</button></div>}
+        {view === "vision" && <><select aria-label="Vision category filter" value={category} onChange={e => setCategory(e.target.value)}>{categories.map(c => <option key={c}>{c}</option>)}</select>
+          <select aria-label="Vision export format" value={exportFormat} onChange={e => setExportFormat(e.target.value as "png"|"jpeg")}><option value="png">PNG</option><option value="jpeg">JPG</option></select>
+          <Button secondary disabled={exporting} onClick={() => void exportBoard()}><Download size={16} />{exporting ? "Creating..." : "Export collage"}</Button>
+          <Button secondary onClick={() => setSettings(!settings)}><Palette size={16} />Categories</Button>
+          <Button onClick={() => add()}><Plus size={16} />Add vision item</Button></>}
       </div>
     </div>
     {exportStatus && <p role="status" className="le-export-status">{exportStatus}</p>}
-    {settings && <CategoryManager categoryKey="visionCategories" title="Vision categories" />}
-    <div className="le-vision-daily">
-      <div>
-        <span>Today&apos;s Why</span>
-        <h3>You are {closer} closer to {whyTitle}.</h3>
-        <p>Small choices are becoming visible evidence. Keep going.</p>
-      </div>
-      <div className="le-vision-coach">
-        <BrainCircuit size={20} />
-        <p>{coach}</p>
-      </div>
-    </div>
+    {view === "goals" && goalsView ? goalsView : <><div className="le-vision-flow-copy"><p>Tap a card to flip it and read what is behind the image.</p></div>{settings && <CategoryManager categoryKey="visionCategories" title="Vision categories" />}
     {!data.board.length ? <div className="le-vision-empty">
       <div className="le-vision-empty-board">
         <button type="button" onClick={() => add("Travel")}><Plane size={18} />Bali 2027</button>
@@ -180,7 +371,7 @@ export function VisionWorkspace() {
       <Empty title="Start with one image, quote, or dream purchase." action="Create vision item" onClick={() => add()} />
     </div> : <div className="le-vision-canvas" aria-label="Vision board canvas">
       {visible.map((item, index) => <VisionCard key={item.id} item={item} index={index} data={data} edit={() => setDraft(item)} remove={() => update(d => ({ ...d, board: d.board.filter(x => x.id !== item.id) }))} />)}
-    </div>}
+    </div>}</>}
     {draft && <Modal title="Vision item" close={() => setDraft(null)}><form onSubmit={e => { e.preventDefault(); update(d => ({ ...d, board: [...d.board.filter(b => b.id !== draft.id), draft] })); setDraft(null); }}>
       <Field label="Type"><select value={draft.kind ?? "Dream"} onChange={e => setDraft({ ...draft, kind: e.target.value })}>{kinds.map(kind => <option key={kind}>{kind}</option>)}</select></Field>
       <Field label="Title"><input required value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} placeholder="Bali 2027, Paris Trip, New Apartment" /></Field>

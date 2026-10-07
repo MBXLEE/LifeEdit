@@ -38,6 +38,7 @@
   .le-sidebar { display:flex; }
   .le-mobile-nav { display:none; }
   .le-app[data-sidebar=compact] .le-sidebar { width:80px;padding-inline:12px; }
+  .le-app[data-sidebar=compact] .le-main { margin-left:80px; }
   .le-app[data-sidebar=compact] .le-sidebar .le-brand>div,
   .le-app[data-sidebar=compact] .le-sidebar nav a span,
   .le-app[data-sidebar=compact] .le-sidebar-footer span,
@@ -57,6 +58,8 @@
   .le-app[data-sidebar=auto] .le-sidebar nav a { justify-content:center;padding:13px; }
   .le-app[data-sidebar=auto] .le-sidebar-footer { align-items:center;justify-content:center; }
   .le-app[data-sidebar=expanded] .le-sidebar { width:224px; }
+  .le-app[data-sidebar=expanded] .le-main { margin-left:224px; }
+  .le-app[data-sidebar=auto] .le-main { margin-left:80px; }
   .le-content { padding:28px 24px; }
 }
 @media(max-width:767px) {
@@ -76,7 +79,7 @@
   .le-sidebar-footer { margin-top:auto;padding-top:16px;padding-bottom:4px; }
   .le-scrim { display:block;position:fixed;inset:0;border:0;background:rgba(26,20,25,.34);backdrop-filter:blur(5px);z-index:65;animation:le-fade-in .18s ease-out; }
   .le-sidebar-toggle { display:grid!important; }
-  .le-main { width:100%; }
+  .le-main { width:100%;margin-left:0; }
   .le-topbar { position:sticky;top:0;height:calc(62px + env(safe-area-inset-top));padding:env(safe-area-inset-top) 18px 0;border:0;background:hsl(var(--background)/.82);backdrop-filter:blur(16px); }
   .le-breadcrumb,.le-save-status { display:none; }
   .le-avatar { width:40px;height:40px;border-radius:16px;font:20px Georgia,serif; }
@@ -187,6 +190,13 @@
   .le-app[data-page=journal] .le-choices button:nth-child(4n+3) { background:color-mix(in srgb,#d7828b 17%,hsl(var(--card))); }
   .le-app[data-page=journal] .le-choices button:nth-child(4n+4) { background:hsl(var(--secondary)); }
   .le-app[data-page=journal] .le-choices button[aria-pressed=true] { color:var(--le-ink);outline:2px solid hsl(var(--primary));outline-offset:-2px; }
+  .le-journal-photos-editor { margin:18px 0;padding:14px;border-radius:18px; }
+  .le-journal-photos-editor>.le-row { align-items:flex-start; }
+  .le-photo-add { width:100%;min-height:48px;margin-top:8px; }
+  .le-journal-photo-grid { grid-template-columns:repeat(3,minmax(0,1fr));gap:8px; }
+  .le-journal-photo-tile figcaption { padding:22px 5px 5px; }
+  .le-journal-photo-tile figcaption span { display:none; }
+  .le-photo-lightbox .le-board-image,.le-photo-lightbox .le-image-placeholder { max-height:70dvh;border-radius:14px; }
   .le-prompt { font:italic 18px/1.4 Georgia,serif;color:hsl(var(--primary)); }
   .le-date-strip { display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-bottom:22px; }
   .le-date-strip button { min-height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border-radius:16px;background:hsl(var(--muted));font-weight:650; }
@@ -209,10 +219,12 @@
   .le-habit-days { gap:5px;margin-top:16px; }
   .le-habit-days span { height:32px;border-radius:16px; }
   .le-habit-days small { font-size:9px; }
-  .le-auth { padding:24px; }
-  .le-auth-body { margin:30px auto 0; }
+  .le-auth { padding:22px 18px; }
+  .le-auth-shell { min-height:auto;margin:24px auto 0;display:block; }
+  .le-auth-intro { display:none; }
+  .le-auth-body { margin:0 auto;padding:28px 22px;border-radius:26px; }
   .le-auth h1 { font-size:34px; }
-  .le-auth-body>.le-eyebrow { display:grid;place-items:center;width:58px;height:58px;border-radius:20px;background:hsl(var(--secondary));color:hsl(var(--primary));font:20px Georgia,serif; }
+  .le-auth-body>.le-eyebrow { display:inline-flex;align-items:center;justify-content:center;width:auto;height:auto;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.66);border:1px solid rgba(196,145,85,.18);color:#8a6837;font:800 10px Arial,sans-serif; }
   .le-auth .le-field input { text-transform:none;font-weight:400; }
   .le-mobile-identity { display:block;background:hsl(var(--primary));color:hsl(var(--primary-foreground));padding:22px 20px;border-radius:24px;margin-bottom:18px; }
   .le-mobile-identity h2 { font:26px/1.25 Georgia,serif; }
