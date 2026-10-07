@@ -72,6 +72,11 @@ export type LifeData = ExtraData & RefinementData & {
   notificationSettings: NotificationSettings;
   lifeResets: LifeResetProgram[];
 };
+function addIsoDays(value: string, amount: number) {
+  const date = new Date(`${value}T12:00:00`);
+  date.setDate(date.getDate() + amount);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
 export function emptyData(): LifeData {
   return { ...extraDefaults(), ...refinementDefaults(), version: 2, name: "", theme: "Ocean", onboarded: false, assessment: {}, areas: [...pillars], priorities: [], identity: "", vision: "", mission: "", lifestyle: "", lifePillars: [...pillars], goals: [], habits: [], tasks: [],
     templates: pillars.map((pillar, i) => ({ id: `pillar-${i}`, name: pillar, pillar, prompts: [
@@ -97,16 +102,47 @@ function withDefaults(raw: Partial<LifeData>): LifeData {
     const images = (item.images?.length ? item.images : item.url ? [item.url] : []).slice(0, 6);
     return { ...item, url: item.url ?? images[0] ?? "", images, phrase: item.phrase ?? item.quote ?? "", importance: item.importance ?? "Medium" };
   });
-  const lifeResets = (raw.lifeResets ?? base.lifeResets).map(reset => ({
-    ...reset,
-    publicName: reset.publicName ?? reset.name,
-    pillars: reset.pillars?.length ? reset.pillars : [lifePillars[0] ?? "Personal Growth"],
-    activities: reset.activities ?? [],
-    photos: reset.photos ?? [],
-    changes: reset.changes ?? [],
-    restores: reset.restores ?? [],
-    share: { ...{ publicTitle: reset.publicName ?? reset.name, showName: true, showDates: true, showStats: true, showMisses: false, showPhotos: false, showReflection: true, statement: "" }, ...(reset.share ?? {}) }
-  }));
+  const lifeResets = (raw.lifeResets ?? base.lifeResets).map(reset => {
+    const standardProject50 = reset.id === "demo-reset-project-50" || (reset.templateId === "project-50" && reset.commitments?.some(item => item.title === "Gym or intentional movement"));
+    const normalizedProject = standardProject50 ? {
+      ...reset,
+      why: "Rebuild routine, movement, reading, skill growth, nutrition and daily tracking for 50 days.",
+      outcome: "A calmer morning routine, daily exercise, consistent reading, and stronger focus blocks.",
+      commitments: [
+        { id: "p50-wake", title: "Wake up before 8am", type: "daily" as const, required: true, pillar: "Mental & Emotional", linkedFeature: "Habits" as const, sourceHint: "wake" },
+        { id: "p50-morning", title: "One-hour morning routine without distractions", type: "daily" as const, required: true, pillar: "Mental & Emotional", linkedFeature: "Habits" as const, sourceHint: "morning" },
+        { id: "p50-exercise", title: "Exercise for one hour", type: "daily" as const, required: true, pillar: "Physical", linkedFeature: "Fitness" as const, sourceHint: "workout" },
+        { id: "p50-diet", title: "Follow a healthy diet", type: "daily" as const, required: true, pillar: "Physical" },
+        { id: "p50-read", title: "Read 10 pages", type: "daily" as const, required: true, pillar: "Personal Growth", linkedFeature: "Habits" as const, sourceHint: "read" },
+        { id: "p50-skill", title: "Work on a skill for one hour", type: "daily" as const, required: true, pillar: "Personal Growth", linkedFeature: "Focus" as const, sourceHint: "skill" },
+        { id: "p50-track", title: "Track daily progress", type: "daily" as const, required: true, pillar: "Personal Growth", linkedFeature: "Journal" as const, sourceHint: "progress" }
+      ]
+    } : reset;
+    const normalized = normalizedProject.id === "demo-reset-completed" && (normalizedProject.photos?.length ?? 0) < 3 ? {
+      ...normalizedProject,
+      photos: [
+        { id: "wellness-photo-start", source: "https://images.unsplash.com/photo-1494597564530-871f2b93ac55?auto=format&fit=crop&w=900&q=80", date: normalizedProject.startDate, label: "Starting point" },
+        { id: "wellness-photo-mid", source: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=900&q=80", date: addIsoDays(normalizedProject.startDate, 14), label: "Halfway" },
+        { id: "wellness-photo-final", source: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=80", date: normalizedProject.endDate, label: "Final memory" }
+      ],
+      restores: normalizedProject.restores?.length ? normalizedProject.restores : [{ id: "wellness-restore-1", date: addIsoDays(normalizedProject.startDate, 12), window: `wellness-sleep:${addIsoDays(normalizedProject.startDate, 12)}`, note: "Restore used after a disrupted travel night." }],
+      changes: [
+        ...(normalizedProject.changes ?? []),
+        ...(normalizedProject.changes?.some(change => change.id === "wellness-restore-used") ? [] : [{ id: "wellness-restore-used", date: addIsoDays(normalizedProject.startDate, 12), day: 13, text: "Restore used for sleep after a disrupted travel night." }])
+      ],
+      share: { ...(normalizedProject.share ?? {}), publicTitle: normalizedProject.share?.publicTitle || "30 days of returning to myself", statement: normalizedProject.share?.statement || "Gentle structure still counts." }
+    } : normalizedProject;
+    return {
+      ...normalized,
+      publicName: normalized.publicName ?? normalized.name,
+      pillars: normalized.pillars?.length ? normalized.pillars : [lifePillars[0] ?? "Personal Growth"],
+      activities: normalized.activities ?? [],
+      photos: normalized.photos ?? [],
+      changes: normalized.changes ?? [],
+      restores: normalized.restores ?? [],
+      share: { ...{ publicTitle: normalized.publicName ?? normalized.name, showName: false, showDates: false, showStats: false, showMisses: false, showPhotos: false, showReflection: true, statement: "" }, ...(normalized.share ?? {}) }
+    };
+  });
   return { ...base, ...raw, goals, board, lifePillars, lifeResets, spendingLimits: { ...base.spendingLimits, ...raw.spendingLimits, categories: { ...base.spendingLimits.categories, ...raw.spendingLimits?.categories } }, notificationSettings };
 }
 type Store = { data: LifeData; update: (fn: (data: LifeData) => LifeData) => void; ready: boolean; status: string; error: string; retry: () => void; account: boolean; back: () => void; undo: () => void; undoLabel: string; dismissUndo: () => void; offerUndo: (label: string, restore: (data: LifeData) => LifeData) => void };

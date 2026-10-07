@@ -36,7 +36,7 @@ export function createDemoData(base: LifeData, now = octoberDemoDate): LifeData 
     journals: [
       { id: "demo-journal-1", title: "A small win", template: "pillar-2", pillar: "Mental & Emotional", body: "I made space for a walk and returned to work feeling clearer. Tomorrow I will protect that time again.", date: date(-1) },
       { id: "demo-journal-2", title: "This week's intention", template: "pillar-5", pillar: "Personal Growth", body: "Focus on one meaningful task before opening social media.", date: date() },
-      { id: "demo-reset-journal-1", title: "Project 50 weekly review", template: "pillar-5", pillar: "Personal Growth", body: "This week felt steadier. The gym target is working because I can choose the days without failing early.", date: date(-3) },
+      { id: "demo-reset-journal-1", title: "Project 50 daily progress", template: "pillar-5", pillar: "Personal Growth", body: "The morning routine helped the day feel intentional. I tracked the rules honestly and kept going.", date: date(-3) },
       { id: "demo-reset-journal-2", title: "Bible Reset reflection", template: "pillar-4", pillar: "Spiritual", body: "Reading before work made the whole morning feel calmer.", date: date(-1) },
     ],
     goals: [
@@ -112,27 +112,30 @@ export function createDemoData(base: LifeData, now = octoberDemoDate): LifeData 
     studyPlans: [{ id: "demo-study", title: "Daily reflection", passage: "Psalm 23", notes: "Reflect on one passage each day.", progress: 20, date: date(), archived: false }],
     lifeResets: [
       {
-        id: "demo-reset-project-50", templateId: "project-50", name: "Project 50", publicName: "50 days of focus", why: "Rebuild routine, reduce scrolling, and make movement non-negotiable without turning it into a punishment.", outcome: "A calmer morning routine, four training sessions a week, and stronger focus blocks.", startDate: date(-18), endDate: date(31), duration: 50, pillars: ["Physical", "Mental & Emotional", "Personal Growth", "Career"], status: "active", accountability: "Flexible", intensity: "Balanced", restoreAllowance: 2, editAllowance: 2,
+        id: "demo-reset-project-50", templateId: "project-50", name: "Project 50", publicName: "50 days of focus", why: "Rebuild routine, movement, reading, skill growth, nutrition and daily tracking for 50 days.", outcome: "A calmer morning routine, daily exercise, consistent reading, and stronger focus blocks.", startDate: date(-18), endDate: date(31), duration: 50, pillars: ["Physical", "Mental & Emotional", "Personal Growth", "Career"], status: "active", accountability: "Flexible", intensity: "Balanced", restoreAllowance: 2, editAllowance: 2,
         commitments: [
-          { id: "p50-morning", title: "Morning routine before scrolling", type: "daily", required: true, pillar: "Mental & Emotional", linkedFeature: "Habits" },
-          { id: "p50-gym", title: "Gym or intentional movement", type: "weekly-quantity", targetPerWeek: 4, required: true, pillar: "Physical", linkedFeature: "Fitness", sourceHint: "gym" },
-          { id: "p50-learn", title: "Learn for one hour", type: "daily", required: true, pillar: "Career", linkedFeature: "Focus" },
-          { id: "p50-sunday", title: "Dedicated Sunday reset", type: "weekly-recurring", scheduleDays: [0], required: true, pillar: "Personal Growth", linkedFeature: "Planner" },
-          { id: "p50-social", title: "Social media maximum 60 minutes", type: "limit", limitAmount: 60, limitUnit: "minutes", required: true, pillar: "Mental & Emotional" },
+          { id: "p50-wake", title: "Wake up before 8am", type: "daily", required: true, pillar: "Mental & Emotional", linkedFeature: "Habits", sourceHint: "wake" },
+          { id: "p50-morning", title: "One-hour morning routine without distractions", type: "daily", required: true, pillar: "Mental & Emotional", linkedFeature: "Habits", sourceHint: "morning" },
+          { id: "p50-exercise", title: "Exercise for one hour", type: "daily", required: true, pillar: "Physical", linkedFeature: "Fitness", sourceHint: "workout" },
+          { id: "p50-diet", title: "Follow a healthy diet", type: "daily", required: true, pillar: "Physical" },
+          { id: "p50-read", title: "Read 10 pages", type: "daily", required: true, pillar: "Personal Growth", linkedFeature: "Habits", sourceHint: "read" },
+          { id: "p50-skill", title: "Work on a skill for one hour", type: "daily", required: true, pillar: "Career", linkedFeature: "Focus", sourceHint: "skill" },
+          { id: "p50-track", title: "Track daily progress", type: "daily", required: true, pillar: "Personal Growth", linkedFeature: "Journal", sourceHint: "progress" },
         ],
         activities: [
+          ...Array.from({ length: 12 }, (_, i) => ({ id: `p50-wake-${i}`, commitmentId: "p50-wake", date: date(-18 + i), source: "reset" as const })),
           ...Array.from({ length: 12 }, (_, i) => ({ id: `p50-morning-${i}`, commitmentId: "p50-morning", date: date(-18 + i), source: "reset" as const })),
-          ...Array.from({ length: 13 }, (_, i) => ({ id: `p50-learn-${i}`, commitmentId: "p50-learn", date: date(-18 + i), source: "reset" as const })),
-          ...Array.from({ length: 14 }, (_, i) => ({ id: `p50-social-${i}`, commitmentId: "p50-social", date: date(-18 + i), source: "reset" as const })),
-          { id: "p50-sunday-1", commitmentId: "p50-sunday", date: date(-14), source: "reset" as const },
-          { id: "p50-sunday-2", commitmentId: "p50-sunday", date: date(-7), source: "reset" as const },
+          ...Array.from({ length: 13 }, (_, i) => ({ id: `p50-diet-${i}`, commitmentId: "p50-diet", date: date(-18 + i), source: "reset" as const })),
+          ...Array.from({ length: 14 }, (_, i) => ({ id: `p50-read-${i}`, commitmentId: "p50-read", date: date(-18 + i), source: "reset" as const })),
+          ...Array.from({ length: 13 }, (_, i) => ({ id: `p50-skill-${i}`, commitmentId: "p50-skill", date: date(-18 + i), source: "reset" as const })),
+          ...Array.from({ length: 12 }, (_, i) => ({ id: `p50-track-${i}`, commitmentId: "p50-track", date: date(-18 + i), source: "reset" as const })),
         ],
         photos: [
           { id: "p50-photo-start", source: "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=900&q=80", date: date(-18), label: "Starting photo" },
           { id: "p50-photo-mid", source: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=900&q=80", date: date(-8), label: "Day 10 photo" },
         ],
-        changes: [{ id: "p50-change-1", date: date(-1), day: 18, text: "Gym target changed from fixed weekdays to 4x weekly so the window is evaluated fairly." }],
-        restores: [{ id: "p50-restore-1", date: date(-10), window: "p50-learn:" + date(-10), note: "Restore used after a travel day." }],
+        changes: [{ id: "p50-change-1", date: date(-1), day: 18, text: "Progress tracking wording clarified to match the standard Project 50 rule." }],
+        restores: [{ id: "p50-restore-1", date: date(-10), window: "p50-skill:" + date(-10), note: "Restore used after a travel day." }],
         share: { publicTitle: "50 days of focus", showName: true, showDates: true, showStats: true, showMisses: false, showPhotos: false, showReflection: true, statement: "I kept choosing the person I am becoming." },
         createdAt: date(-19), updatedAt: date(-1)
       },
@@ -169,9 +172,20 @@ export function createDemoData(base: LifeData, now = octoberDemoDate): LifeData 
           { id: "wellness-move", title: "Move three times per week", type: "weekly-quantity", targetPerWeek: 3, required: true, pillar: "Physical", linkedFeature: "Fitness" },
           { id: "wellness-reflect", title: "Evening reflection", type: "specific-days", scheduleDays: [1, 3, 5], required: true, pillar: "Mental & Emotional", linkedFeature: "Journal" },
         ],
-        activities: Array.from({ length: 24 }, (_, i) => ({ id: `wellness-${i}`, commitmentId: i % 3 === 0 ? "wellness-move" : i % 3 === 1 ? "wellness-reflect" : "wellness-sleep", date: date(-48 + i), source: "reset" as const })),
-        photos: [{ id: "wellness-photo", source: "https://images.unsplash.com/photo-1494597564530-871f2b93ac55?auto=format&fit=crop&w=900&q=80", date: date(-48), label: "Starting photo" }],
-        changes: [{ id: "wellness-complete", date: date(-19), day: 30, text: "Reset completed." }], restores: [], completionReflection: "I learned that gentle structure still counts.", completedAt: new Date(`${date(-19)}T18:00:00`).toISOString(),
+        activities: [
+          ...Array.from({ length: 27 }, (_, i) => ({ id: `wellness-sleep-${i}`, commitmentId: "wellness-sleep", date: date(-48 + i), source: "reset" as const })),
+          ...Array.from({ length: 13 }, (_, i) => ({ id: `wellness-move-${i}`, commitmentId: "wellness-move", date: date(-48 + i * 2), source: "reset" as const })),
+          ...Array.from({ length: 11 }, (_, i) => ({ id: `wellness-reflect-${i}`, commitmentId: "wellness-reflect", date: date(-47 + i * 2), source: "reset" as const })),
+        ],
+        photos: [
+          { id: "wellness-photo-start", source: "https://images.unsplash.com/photo-1494597564530-871f2b93ac55?auto=format&fit=crop&w=900&q=80", date: date(-48), label: "Starting point" },
+          { id: "wellness-photo-mid", source: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=900&q=80", date: date(-34), label: "Halfway" },
+          { id: "wellness-photo-final", source: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=80", date: date(-19), label: "Final memory" },
+        ],
+        changes: [
+          { id: "wellness-restore-used", date: date(-36), day: 13, text: "Restore used for sleep after a disrupted travel night." },
+          { id: "wellness-complete", date: date(-19), day: 30, text: "Reset completed." }
+        ], restores: [{ id: "wellness-restore-1", date: date(-36), window: "wellness-sleep:" + date(-36), note: "Restore used after a disrupted travel night." }], completionReflection: "I learned that gentle structure still counts.", completedAt: new Date(`${date(-19)}T18:00:00`).toISOString(),
         share: { publicTitle: "30 days of returning to myself", showName: true, showDates: true, showStats: true, showMisses: false, showPhotos: false, showReflection: true, statement: "Gentle structure still counts." },
         createdAt: date(-50), updatedAt: date(-19)
       }
