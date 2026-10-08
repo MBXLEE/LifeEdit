@@ -235,14 +235,22 @@ export function budgetGuidanceSummary(data:LifeData,date:string,currency=data.cu
   });
   return {date,currency,month,budgetMonth:month,cycleStart:cycle.start,cycleEnd:cycle.end,nextPayday:cycle.nextPayday,payday:cycle.payday,daysUntilPayday:cycle.daysUntilPayday,periodDays:cycle.periodDays,weekStart:start,weekEnd:end,monthlyBudget,monthlySpent,monthlyRemaining,weeklyBudget,systemWeeklyBudget,weeklySpent,weekRemaining,dailyTarget,systemDailyTarget,todaySpent,plannedToday,todayRemaining,tomorrowSuggested,health,insight,projectedMonthEnd,weekSavings,goalProgress,spendingVelocity,breathingRoom:monthlyRemaining,weekEnvelopes};
 }
+export function journalDailyRatings(data:LifeData,pillar:string,date:string) {
+  const grouped=data.journalRatings.filter(r=>r.pillar===pillar&&r.date<=date&&r.rating>=1&&r.rating<=10).reduce<Record<string,{date:string;rating:number;count:number;latestJournalId:string}>>((acc,row)=>{
+    const existing=acc[row.date] ?? {date:row.date,rating:0,count:0,latestJournalId:row.journalId};
+    existing.rating+=row.rating; existing.count+=1; existing.latestJournalId=row.journalId; acc[row.date]=existing; return acc;
+  },{});
+  return Object.values(grouped).map(row=>({...row,rating:Number((row.rating/row.count).toFixed(1))})).sort((a,b)=>a.date.localeCompare(b.date));
+}
 export function journalRatingStats(data:LifeData,pillar:string,date:string) {
-  const rows=data.journalRatings.filter(r=>r.pillar===pillar&&r.date<=date).sort((a,b)=>a.date.localeCompare(b.date));
+  const rows=journalDailyRatings(data,pillar,date);
   const avg=(days:number)=>{const recent=rows.filter(r=>daysBetween(r.date,date)<days);return recent.length?Number((recent.reduce((s,r)=>s+r.rating,0)/recent.length).toFixed(1)):null;};
-  const previous=data.journalRatings.filter(r=>r.pillar===pillar&&r.date<date).sort((a,b)=>a.date.localeCompare(b.date)).slice(-10,-5);
+  const previous=rows.slice(-10,-5);
   const latest=rows.slice(-5);
   const recentAverage=latest.length?Number((latest.reduce((s,r)=>s+r.rating,0)/latest.length).toFixed(1)):null;
   const trend=previous.length&&latest.length?latest.reduce((s,r)=>s+r.rating,0)/latest.length-previous.reduce((s,r)=>s+r.rating,0)/previous.length:0;
-  return {rows,weeklyAverage:avg(7),monthlyAverage:avg(30),quarterlyAverage:avg(90),recentAverage,trend:trend>0.35?"Improving":trend<-0.35?"Declining":rows.length?"Steady":"No ratings yet"};
+  const current=rows.at(-1)?.rating ?? null;
+  return {rows,current,weeklyAverage:avg(7),monthlyAverage:avg(30),quarterlyAverage:avg(90),recentAverage,trend:trend>0.35?"Improving":trend<-0.35?"Declining":rows.length?"Steady":"No ratings yet"};
 }
 export function improvementActions(pillar:string) {
   const actions:Record<string,string[]>={

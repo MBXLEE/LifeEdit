@@ -7,7 +7,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { usePathname, useRouter } from "next/navigation";
 import { Children, cloneElement, isValidElement, useEffect, useId, useRef, useState, type CSSProperties, type FormEvent, type ReactElement, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Archive, Bell, BookOpen, CalendarDays, Check, ChevronRight, CircleDollarSign, Clock, Download, Dumbbell, Home, ImagePlus, LogOut, Menu, Pause, Pencil, Play, Plus, RotateCcw, Settings, Target, Trash2, TrendingUp, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Archive, Bell, BookOpen, Brain, Briefcase, CalendarDays, Check, ChevronRight, CircleDollarSign, Clock, Download, Dumbbell, Flower2, GraduationCap, HeartHandshake, Home, ImagePlus, Lightbulb, LogOut, Menu, Pause, Pencil, Play, Plus, RotateCcw, Settings, Sparkles, Sprout, Target, Trash2, TrendingUp, Users, X } from "lucide-react";
 import { useLife, pillars, themeNames, uid, today, configured, type Goal, type Habit, type JournalPhoto, type LifeData, type VisionImportance, type Workout } from "@/lib/life-store";
 import { clearAuthPersistence, createClient } from "@/lib/supabase/client";
 import { WorkspaceNavigation, ExploreModules, profileName } from "./workspace-navigation";
@@ -120,7 +120,7 @@ function Onboarding() {
     {step === 0 && <><h2>Welcome to The Life Edit.</h2><p className="le-muted">A moment to consider where you are, and who you want to become.</p><Field label="What should we call you?"><input value={data.name} maxLength={80} onChange={e => set("name", e.target.value)} placeholder="Your name" /></Field></>}
     {step === 1 && <><p className="le-muted">How does each part of life feel today? 1 is unfulfilled, 10 is thriving.</p>{currentPillars.map(p => <Field key={p} label={`${p} · ${data.assessment[p] ?? "Not rated"}`}><input type="range" min="1" max="10" value={data.assessment[p] ?? 1} aria-label={`${p} rating`} onChange={e => set("assessment", { ...data.assessment, [p]: Number(e.target.value) })} /><div className="le-scale">{Array.from({ length: 10 }, (_, i) => <button type="button" key={i} aria-pressed={data.assessment[p] === i + 1} onClick={() => set("assessment", { ...data.assessment, [p]: i + 1 })}>{i + 1}</button>)}</div></Field>)}</>}
     {step === 2 && <><h2>What deserves your attention?</h2><MultiSelect options={data.areas} selected={data.priorities} onChange={v => set("priorities", v)} /><AddCustom label="Add Custom Area" onAdd={v => { update(d => ({ ...d, areas: [...new Set([...d.areas, v])], priorities: [...new Set([...d.priorities, v])] })); }} /></>}
-    {(step === 3 || step === 4) && (() => { const direction = step === 3 ? "build" : "quit"; const options = [...new Set([...(step === 3 ? ["Hydration", "Reading", "Prayer", "Journaling", "Study", "Gym"] : ["Smoking", "Alcohol", "Energy Drinks", "Doom Scrolling", "Gambling", "Overspending"]), ...data.habits.filter(h => h.direction === direction).map(h => h.name)])]; return <><h2>{step === 3 ? "Small promises to keep." : "Make space for something better."}</h2><div className="le-choices">{options.map(name => <button key={name} aria-pressed={data.habits.some(h => h.name === name && h.direction === direction)} onClick={() => habit(name, direction)}>{name}{data.habits.some(h => h.name === name && h.direction === direction) && <Check size={16} />}</button>)}</div><AddCustom label={step === 3 ? "Add Custom Habit" : "Add Custom Habit To Quit"} onAdd={v => { if (!data.habits.some(h => h.name === v && h.direction === direction)) habit(v, direction); }} /></>; })()}
+    {(step === 3 || step === 4) && (() => { const direction = step === 3 ? "build" : "quit"; const options = [...new Set([...(step === 3 ? ["Hydration", "Reading", "Prayer", "Journaling", "Study", "Gym"] : ["Smoking", "Alcohol", "Energy Drinks", "Doom Scrolling", "Gambling", "Overspending"]), ...data.habits.filter(h => h.direction === direction).map(h => h.name)])]; return <><h2>{step === 3 ? "Small promises to keep." : "Time to quit bad habits."}</h2><div className="le-choices">{options.map(name => <button key={name} aria-pressed={data.habits.some(h => h.name === name && h.direction === direction)} onClick={() => habit(name, direction)}>{name}{data.habits.some(h => h.name === name && h.direction === direction) && <Check size={16} />}</button>)}</div><AddCustom label={step === 3 ? "Add Custom Habit" : "Add Custom Habit To Quit"} onAdd={v => { if (!data.habits.some(h => h.name === v && h.direction === direction)) habit(v, direction); }} /></>; })()}
     {step === 5 && <FutureFields />}{step === 6 && <ThemePicker />}
     {step === 7 && <><h2>Your next chapter.</h2><p className="le-muted">Review your selections. You can revisit them anytime in Settings.</p><dl className="le-review"><dt>Name</dt><dd>{data.name || "Not set"}</dd><dt>Life assessment</dt><dd>{currentPillars.map(p => `${p}: ${data.assessment[p] ?? "Not rated"}`).join(" · ")}</dd><dt>Focus areas</dt><dd>{data.priorities.join(", ") || "None selected"}</dd><dt>Habits to build</dt><dd>{data.habits.filter(h => h.direction === "build").map(h => h.name).join(", ") || "None selected"}</dd><dt>Habits to quit</dt><dd>{data.habits.filter(h => h.direction === "quit").map(h => h.name).join(", ") || "None selected"}</dd><dt>Future identity</dt><dd>{data.identity || "Not set"}</dd><dt>Vision</dt><dd>{data.vision || "Not set"}</dd><dt>Mission</dt><dd>{data.mission || "Not set"}</dd><dt>Lifestyle</dt><dd>{data.lifestyle || "Not set"}</dd><dt>Theme</dt><dd>{data.theme}</dd></dl></>}
     </div>{message && <p role="alert" className="le-error">{message}</p>}<div className="le-row mt-8"><Button secondary disabled={step === 0} onClick={() => setStep(s => s - 1)}><ArrowLeft size={16} />Back</Button><Button onClick={next}>{step === 7 ? "Complete life edit" : "Continue"}<ArrowRight size={16} /></Button></div></div></div></>;
@@ -201,15 +201,76 @@ function GoalEditor({ goal, close }: { goal: Goal; close: () => void }) {
   return <Modal title={goal.title ? "Edit goal" : "Create a goal"} close={close}><form onSubmit={saveGoal}><Field label="Goal title"><input autoFocus required value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} /></Field><div className="le-grid-two"><Field label="Time horizon"><select value={draft.horizon} onChange={e => setDraft({ ...draft, horizon: e.target.value, parent: "" })}>{horizons.map(h => <option key={h}>{h}</option>)}</select></Field><Field label="Target date"><input type="date" value={draft.due} onChange={e => setDraft({ ...draft, due: e.target.value })} /></Field></div>{draft.horizon !== "Annual" && <Field label="Parent goal"><select value={draft.parent} onChange={e => setDraft({ ...draft, parent: e.target.value })}><option value="">Independent goal</option>{parents.map(p => <option value={p.id} key={p.id}>{p.title}</option>)}</select></Field>}<Field label="Life pillars"><MultiSelect options={activePillars(data)} selected={draft.pillars} onChange={v => setDraft({ ...draft, pillars: v })} /></Field><Field label={`Progress · ${draft.progress}%`}><input type="range" min="0" max="100" value={draft.progress} onChange={e => setDraft({ ...draft, progress: Number(e.target.value) })} /></Field><Field label="Notes"><textarea value={draft.notes} onChange={e => setDraft({ ...draft, notes: e.target.value })} /></Field><label className="le-check-row"><input type="checkbox" checked={vision.enabled} onChange={e => setDraft({ ...draft, visionBoard: { ...vision, enabled: e.target.checked } })} />Add to Vision Board</label>{vision.enabled && <section className="le-goal-vision-fields"><MultiImageUpload values={vision.images} onBusy={setUploading} onChange={images => setDraft(current => ({ ...current, visionBoard: { ...(current.visionBoard ?? vision), images } }))} /><Field label="Word or phrase"><input maxLength={60} value={vision.phrase} onChange={e => setDraft({ ...draft, visionBoard: { ...vision, phrase: e.target.value } })} placeholder="Confidence, Soft Life, My Future Home" /></Field><Field label="Importance"><select value={vision.importance} onChange={e => setDraft({ ...draft, visionBoard: { ...vision, importance: e.target.value as VisionImportance } })}>{importanceOptions.map(option => <option key={option}>{option}</option>)}</select></Field></section>}{error && <p role="alert" className="le-error">{error}</p>}<div className="le-row"><SaveButton disabled={uploading}>{uploading ? "Adding images..." : "Save goal"}</SaveButton>{data.goals.some(g => g.id === draft.id) && <Button secondary onClick={() => { update(d => ({ ...d, goals: d.goals.filter(g => g.id !== draft.id), board: d.board.filter(item => item.goalId !== draft.id) })); close(); }}><Trash2 size={16}/>Delete goal</Button>}</div></form></Modal>;
 }
 
+function pillarIcon(pillar: string) {
+  const key = pillar.toLowerCase();
+  if (key.includes("financ") || key.includes("money") || key.includes("budget")) return CircleDollarSign;
+  if (key.includes("physical") || key.includes("fitness") || key.includes("health")) return Dumbbell;
+  if (key.includes("mental") || key.includes("emotional")) return Brain;
+  if (key.includes("social") || key.includes("relationship")) return Users;
+  if (key.includes("spiritual") || key.includes("faith") || key.includes("prayer")) return Flower2;
+  if (key.includes("academic") || key.includes("study") || key.includes("learn")) return GraduationCap;
+  if (key.includes("career") || key.includes("work")) return Briefcase;
+  if (key.includes("growth")) return Sprout;
+  return Sparkles;
+}
+function pillarPromptLabel(pillar: string) {
+  const lower = pillar.toLowerCase();
+  if (lower.includes("financial")) return "financial well-being";
+  if (lower.includes("physical")) return "physical well-being";
+  if (lower.includes("mental") || lower.includes("emotional")) return "mental and emotional well-being";
+  if (lower.includes("social")) return "social connection";
+  if (lower.includes("spiritual")) return "spiritual life";
+  if (lower.includes("growth")) return "personal growth";
+  return `${pillar.toLowerCase()} progress`;
+}
+function notebookTone(data: LifeData, pillar: string, index: number) {
+  const curated: Record<string, string> = {
+    Financial: "#6f8068",
+    Physical: "#bd7d6d",
+    "Mental & Emotional": "#758ca0",
+    Social: "#b17984",
+    Spiritual: "#9180a6",
+    "Personal Growth": "#b8895e"
+  };
+  const custom = ["#7f7867", "#6f8791", "#8b7f99", "#8a8365", "#93736f", "#72836f", "#7e7788", "#8a735e"];
+  const palette = pillarPalette(data, pillar);
+  const hash = [...pillar].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const base = curated[pillar] ?? (data.pillarStyles.some(style => style.pillar === pillar) ? `color-mix(in srgb, ${palette.base} 46%, ${custom[hash % custom.length]})` : custom[index % custom.length]);
+  return {
+    "--notebook-base": base,
+    "--notebook-soft": `color-mix(in srgb, ${base} 18%, #fbf7f0)`,
+    "--notebook-deep": `color-mix(in srgb, ${base} 78%, #2f2527)`,
+    "--notebook-ink": `color-mix(in srgb, ${base} 34%, #fffaf2)`
+  } as CSSProperties;
+}
+
 function Journals() {
-  const { data, update, account } = useLife(); const [template, setTemplate] = useState(data.templates[0]?.id ?? ""); const [entry, setEntry] = useState<LifeData["journals"][number] | null>(null); const [rating, setRating] = useState(5); const [custom, setCustom] = useState(false); const [message, setMessage] = useState(""); const [photoBusy, setPhotoBusy] = useState(false); const [photoError, setPhotoError] = useState(""); const [lightbox, setLightbox] = useState<JournalPhoto | null>(null); const selected = data.templates.find(t => t.id === template);
+  const { data, update, account } = useLife();
   const currentPillars = activePillars(data);
+  const historicalPillars = [...new Set(data.journals.map(j => j.pillar).filter(p => p && !currentPillars.includes(p)))];
+  const [selectedPillar, setSelectedPillar] = useState<string | null>(null);
+  const [entry, setEntry] = useState<LifeData["journals"][number] | null>(null);
+  const [rating, setRating] = useState<number | "">("");
+  const [message, setMessage] = useState("");
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const [lightbox, setLightbox] = useState<JournalPhoto | null>(null);
   const savedEntry = entry ? data.journals.find(j => j.id === entry.id) : null;
   const photos = entry?.photos?.slice().sort((a,b)=>a.order-b.order) ?? [];
+  const notebookPillar = selectedPillar && (currentPillars.includes(selectedPillar) || historicalPillars.includes(selectedPillar)) ? selectedPillar : null;
+  const notebookEntries = notebookPillar ? data.journals.filter(j => j.pillar === notebookPillar).slice().sort((a,b)=>b.date.localeCompare(a.date) || b.id.localeCompare(a.id)) : [];
+  const activeTemplates = notebookPillar ? data.templates.filter(t => t.pillar === notebookPillar) : [];
+  const prompts = [...new Set(activeTemplates.flatMap(t => t.prompts))];
   function cleanupUnsavedPhotos(draft:LifeData["journals"][number]) { const saved=data.journals.find(j=>j.id===draft.id); const savedIds=new Set(saved?.photos?.map(photo=>photo.id)??[]); draft.photos?.filter(photo=>!savedIds.has(photo.id)).forEach(photo=>void deleteMediaSource(photo.source)); }
   function closeEntry() { if (entry) cleanupUnsavedPhotos(entry); setEntry(null); setPhotoBusy(false); setPhotoError(""); }
-  function openEntry(j:LifeData["journals"][number]) { setEntry({ ...j, photos: j.photos?.map(photo=>({ ...photo })) ?? [] }); setPhotoError(""); setRating(data.journalRatings.find(r=>r.journalId===j.id)?.rating ?? 5); }
-  function create() { setMessage(""); setPhotoError(""); const pillar=selected?.pillar ?? currentPillars[2] ?? currentPillars[0]; setRating(5); setEntry({ id: uid(), title: "", template, pillar, body: "", date: today(), photos: [] }); }
+  function openEntry(j:LifeData["journals"][number]) { setSelectedPillar(j.pillar); setEntry({ ...j, photos: j.photos?.map(photo=>({ ...photo })) ?? [] }); setPhotoError(""); setRating(data.journalRatings.find(r=>r.journalId===j.id)?.rating ?? ""); }
+  function create(pillar = notebookPillar) {
+    if (!pillar) return;
+    setMessage(""); setPhotoError("");
+    const template = data.templates.find(t => t.pillar === pillar)?.id ?? "";
+    setRating("");
+    setEntry({ id: uid(), title: "", template, pillar, body: "", date: today(), photos: [] });
+  }
   async function addPhotos(files:FileList|null) {
     if (!entry || !files?.length) return;
     setPhotoBusy(true); setPhotoError("");
@@ -232,12 +293,13 @@ function Journals() {
   }
   function saveEntry(event:FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!entry || photoBusy) return;
-    const ordered={ ...entry, photos: photos.map((photo,index)=>({ ...photo, order:index })) };
+    const ordered={ ...entry, title: entry.title.trim(), body: entry.body.trim(), photos: photos.map((photo,index)=>({ ...photo, order:index })) };
     const removed=(savedEntry?.photos??[]).filter(photo=>!ordered.photos?.some(item=>item.id===photo.id));
-    const journalRating={id:data.journalRatings.find(r=>r.journalId===entry.id)?.id ?? uid(), journalId:entry.id, pillar:entry.pillar, rating, date:entry.date};
-    update(d => ({ ...d, journals: [...d.journals.filter(j => j.id !== entry.id), ordered], journalRatings: [...d.journalRatings.filter(r => r.journalId !== entry.id), journalRating] }));
+    const existingRating=data.journalRatings.find(r=>r.journalId===entry.id);
+    const journalRating=rating==="" ? null : { id:existingRating?.id ?? uid(), journalId:entry.id, pillar:entry.pillar, rating, date:entry.date };
+    update(d => ({ ...d, journals: [...d.journals.filter(j => j.id !== entry.id), ordered], journalRatings: journalRating ? [...d.journalRatings.filter(r => r.journalId !== entry.id), journalRating] : d.journalRatings.filter(r => r.journalId !== entry.id) }));
     removed.forEach(photo=>void deleteMediaSource(photo.source));
-    setEntry(null); setMessage("Reflection and daily rating saved."); setPhotoError("");
+    setEntry(null); setSelectedPillar(ordered.pillar); setMessage(rating==="" ? "Reflection saved." : "Reflection and daily rating saved."); setPhotoError("");
   }
   function deleteEntry() {
     if (!entry) return;
@@ -245,13 +307,30 @@ function Journals() {
     update(d => ({ ...d, journals: d.journals.filter(j => j.id !== entry.id), journalRatings: d.journalRatings.filter(r=>r.journalId!==entry.id) }));
     setEntry(null); setPhotoError("");
   }
-  return <><Heading section="A moment with yourself" title="The pages of your life."><Button onClick={create}><Plus size={16} />New entry</Button></Heading><div className="le-journal-summary"><div className="le-daily-stats"><div><strong>{new Set(data.journals.map(j => j.date)).size}</strong><small>Days journaled</small></div><div><strong>{data.journalRatings.length}</strong><small>Daily ratings</small></div><div><strong>{data.journals.filter(j => j.date >= (() => { const d = new Date(); d.setDate(d.getDate() - 6); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })() && j.date <= today()).length}</strong><small>Last 7 days</small></div></div>{selected?.prompts[0] && <div className="le-affirmation"><p className="le-eyebrow">Today&apos;s prompt</p><blockquote>{selected.prompts[0]}</blockquote></div>}</div><div className="le-grid-main"><div><Card><p className="le-eyebrow le-journal-picker-title">Choose a pillar journal</p><div className="le-choices le-pillar-choices">{data.templates.map(t => <button key={t.id} aria-pressed={template === t.id} onClick={() => { if (entry) cleanupUnsavedPhotos(entry); setTemplate(t.id); setEntry(null); setMessage(""); }}>{t.name}<BookOpen size={17} /></button>)}</div><div className="le-journal-actions"><AddCustomJournal open={() => setCustom(true)} /><Link href="/settings">Manage journal templates</Link></div></Card><div className="le-notebook mt-6"><p className="le-eyebrow">{selected?.name} · Reflection prompts</p>{selected?.prompts.map((p, i) => <p key={i} className="le-prompt">{p}</p>)}<Button secondary onClick={create}><Pencil size={16} />Begin a reflection</Button></div></div><Card><h2>Your reflections</h2>{!data.journals.length ? <Empty title="Create your first journal entry." action="Write an entry" onClick={create} /> : data.journals.slice().reverse().map(j => { const saved=data.journalRatings.find(r=>r.journalId===j.id); const count=j.photos?.length??0; return <button key={j.id} className="le-entry" onClick={() => openEntry(j)}><small>{j.date} · {j.pillar}{saved?` · ${saved.rating}/10`:""}{count?` · ${count} photo${count===1?"":"s"}`:""}</small><h3>{j.title}</h3><p>{j.body.slice(0, 100)}</p>{count>0&&<span className="le-entry-photo-count"><ImagePlus size={14}/>{count}</span>}<ArrowRight size={16} /></button>; })}</Card></div>{message && <p role="status" className="le-toast">{message}</p>}
-    {entry && <Modal title={data.journals.some(j => j.id === entry.id) ? "Edit reflection" : "New reflection"} close={closeEntry}><form onSubmit={saveEntry}><Field label="Title"><input required value={entry.title} onChange={e => setEntry({ ...entry, title: e.target.value })} /></Field><div className="le-grid-two"><Field label="Date"><input type="date" required value={entry.date} onChange={e => setEntry({ ...entry, date: e.target.value })} /></Field><Field label="Life pillar"><select value={entry.pillar} onChange={e => setEntry({ ...entry, pillar: e.target.value })}>{[...new Set([...currentPillars, entry.pillar])].map(p=><option key={p}>{p}</option>)}</select></Field></div>{data.templates.find(t => t.id === entry.template)?.prompts.map((p, i) => <p className="le-muted" key={i}>{p}</p>)}<Field label="Your reflection"><textarea required rows={9} value={entry.body} onChange={e => setEntry({ ...entry, body: e.target.value })} /></Field><JournalPhotoPicker photos={photos} busy={photoBusy} error={photoError} addPhotos={addPhotos} removePhoto={removePhoto} viewPhoto={setLightbox} /><Field label={`${entry.pillar} daily rating · ${rating}/10`}><input type="range" min="1" max="10" value={rating} onChange={e=>setRating(Number(e.target.value))}/><div className="le-scale">{Array.from({ length: 10 }, (_, i) => <button type="button" key={i} aria-pressed={rating === i + 1} onClick={() => setRating(i + 1)}>{i + 1}</button>)}</div></Field><p className="le-muted">Daily ratings build trend insight only. They do not change your official Life Assessment score.</p><div className="le-row"><SaveButton disabled={photoBusy}>{photoBusy ? "Adding photos..." : "Save reflection"}</SaveButton>{data.journals.some(j => j.id === entry.id) && <Button secondary disabled={photoBusy} onClick={deleteEntry}>Delete entry</Button>}</div></form></Modal>}
+  if (!notebookPillar) return <><Heading section="Journal" title="Choose your journal." />
+    <section className="le-notebook-library" aria-label="Journal notebooks">{currentPillars.map((pillar,index) => {
+      const Icon = pillarIcon(pillar); const count = data.journals.filter(j => j.pillar === pillar).length; const latest = data.journals.filter(j => j.pillar === pillar).sort((a,b)=>b.date.localeCompare(a.date))[0]; const saved = latest ? data.journalRatings.find(r=>r.journalId===latest.id) : null;
+      return <button key={pillar} type="button" className="le-notebook-book" style={notebookTone(data,pillar,index)} aria-label={`${pillar} journal${count ? `, ${count} ${count === 1 ? "entry" : "entries"}` : ""}${saved ? `, latest rating ${saved.rating} out of 10` : ""}`} onClick={() => { setSelectedPillar(pillar); setMessage(""); }}>
+        <span className="le-book-spine" aria-hidden="true" /><span className="le-cover-frame" aria-hidden="true" /><span className="le-cover-signet" aria-hidden="true"><Icon size={28} /></span><strong>{pillar}</strong><span className="le-cover-line" aria-hidden="true" />
+      </button>;
+    })}</section>
+    {historicalPillars.length > 0 && <section className="le-past-notebooks"><div className="le-row"><div><p className="le-eyebrow">Past notebooks</p><h2>Historical reflections</h2></div></div><div className="le-inline">{historicalPillars.map(pillar => <Button key={pillar} secondary onClick={() => setSelectedPillar(pillar)}><BookOpen size={16}/>{pillar}</Button>)}</div></section>}
+    {message && <p role="status" className="le-toast">{message}</p>}</>;
+
+  const activeNotebook = currentPillars.includes(notebookPillar);
+  const NotebookIcon = pillarIcon(notebookPillar);
+  return <><section className="le-journal-room" style={notebookTone(data,notebookPillar,currentPillars.indexOf(notebookPillar))}>
+    <button type="button" className="le-back-link" onClick={() => { setSelectedPillar(null); setEntry(null); }}><ArrowLeft size={16}/>All journals</button>
+    <div className="le-journal-room-cover"><span className="le-book-spine" aria-hidden="true" /><NotebookIcon size={52}/></div>
+    <div><p className="le-eyebrow">{activeNotebook ? "Notebook" : "Past notebook"}</p><h1>{notebookPillar} Journal</h1>{prompts[0] && <p>{prompts[0]}</p>}</div>
+    {activeNotebook && <Button onClick={() => create(notebookPillar)}><Pencil size={16} />New Entry</Button>}
+  </section>
+    <div className="le-grid-main mt-6"><section><div className="le-row mb-5"><div><p className="le-eyebrow">Previous entries</p><h2>{notebookEntries.length ? `${notebookEntries.length} saved ${notebookEntries.length === 1 ? "reflection" : "reflections"}` : "A quiet first page."}</h2></div></div>{!notebookEntries.length ? <Empty title="No reflections in this notebook yet." /> : <div className="le-entry-list">{notebookEntries.map(j => { const saved=data.journalRatings.find(r=>r.journalId===j.id); const count=j.photos?.length??0; const thumb=j.photos?.slice().sort((a,b)=>a.order-b.order)[0]; return <button key={j.id} className="le-entry le-entry-card" onClick={() => openEntry(j)}>{thumb && <MediaImage source={thumb.source} alt={thumb.name || "Journal entry photo"} />}<span><small>{j.date}{saved?` · ${saved.rating}/10`:""}{count?` · ${count} photo${count===1?"":"s"}`:""}</small><h3>{j.title || "Untitled reflection"}</h3><p>{j.body.slice(0, 120) || "No preview available."}</p></span><ArrowRight size={16} /></button>; })}</div>}</section>
+      <aside className="le-notebook-side"><Card><p className="le-eyebrow">Optional prompts</p>{prompts.length ? prompts.slice(0,4).map((p,i)=><p key={i} className="le-prompt">{p}</p>) : <p className="le-muted">No prompts saved for this pillar.</p>}<Link href="/settings">Manage templates <ArrowRight size={14}/></Link></Card></aside></div>{message && <p role="status" className="le-toast">{message}</p>}
+    {entry && <Modal title={data.journals.some(j => j.id === entry.id) ? "Edit reflection" : "New entry"} close={closeEntry}><form onSubmit={saveEntry} className="le-writing-form"><div className="le-entry-context" style={notebookTone(data,entry.pillar,0)}><NotebookIcon size={22}/><span>{entry.pillar} Journal</span></div><Field label="Date"><input type="date" required value={entry.date} onChange={e => setEntry({ ...entry, date: e.target.value })} /></Field><Field label="Title"><input value={entry.title} placeholder="Add a title (optional)" onChange={e => setEntry({ ...entry, title: e.target.value })} /></Field>{data.templates.find(t => t.id === entry.template)?.prompts?.length ? <div className="le-prompt-strip">{data.templates.find(t => t.id === entry.template)?.prompts.map((p, i) => <button type="button" key={i} onClick={() => setEntry(current => current ? { ...current, body: current.body ? `${current.body}\n\n${p}\n` : `${p}\n` } : current)}><Lightbulb size={14}/>{p}</button>)}</div> : null}<Field label="Reflection"><textarea required rows={12} placeholder="What's on your mind?" value={entry.body} onChange={e => setEntry({ ...entry, body: e.target.value })} /></Field><JournalPhotoPicker photos={photos} busy={photoBusy} error={photoError} addPhotos={addPhotos} removePhoto={removePhoto} viewPhoto={setLightbox} /><section className="le-rating-panel"><div className="le-row"><div><p className="le-eyebrow">Daily pillar rating</p><h3>How would you rate your {pillarPromptLabel(entry.pillar)} today?</h3></div>{rating!=="" && <Button secondary onClick={() => setRating("")}>Remove rating</Button>}</div><input aria-label={`${entry.pillar} daily rating`} type="range" min="1" max="10" value={rating==="" ? 5 : rating} onChange={e=>setRating(Number(e.target.value))}/><div className="le-scale">{Array.from({ length: 10 }, (_, i) => <button type="button" key={i} aria-pressed={rating === i + 1} onClick={() => setRating(i + 1)}>{i + 1}</button>)}</div><div className="le-rating-context"><span>Low</span><strong>{rating==="" ? "Optional" : `${rating}/10`}</strong><span>High</span></div></section><div className="le-row"><SaveButton disabled={photoBusy}>{photoBusy ? "Adding photos..." : "Save Entry"}</SaveButton>{data.journals.some(j => j.id === entry.id) && <Button secondary disabled={photoBusy} onClick={deleteEntry}><Trash2 size={16}/>Delete entry</Button>}</div></form></Modal>}
     {lightbox && <PhotoLightbox photo={lightbox} close={() => setLightbox(null)} />}
-    {custom && <Modal title="Create a journal template" close={() => setCustom(false)}><form onSubmit={e => { e.preventDefault(); const f = new FormData(e.currentTarget); const id = uid(); update(d => ({ ...d, templates: [...d.templates, { id, name: String(f.get("name")).trim(), pillar: String(f.get("pillar")), prompts: String(f.get("prompts")).split("\n").map(s => s.trim()).filter(Boolean) }] })); setTemplate(id); setCustom(false); }}><Field label="Journal name"><input name="name" required /></Field><Field label="Life pillar"><select name="pillar">{currentPillars.map(p => <option key={p}>{p}</option>)}</select></Field><Field label="Your prompts (one per line)"><textarea name="prompts" rows={5} required /></Field><SaveButton>Create journal</SaveButton></form></Modal>}
   </>;
 }
-function AddCustomJournal({ open }: { open: () => void }) { return <Button secondary onClick={open}><Plus size={16} />Add Custom Journal</Button>; }
 
 function JournalPhotoPicker({ photos, busy, error, addPhotos, removePhoto, viewPhoto }: { photos: JournalPhoto[]; busy: boolean; error: string; addPhotos: (files: FileList | null) => Promise<void>; removePhoto: (photo: JournalPhoto) => void; viewPhoto: (photo: JournalPhoto) => void }) {
   return <section className="le-journal-photos-editor" aria-label="Attached photos">
@@ -320,34 +399,113 @@ function Habits({ direction }: { direction: "build" | "quit" }) {
   </>;
 }
 
+type PlannerTask = LifeData["tasks"][number];
+type PlannerOccurrence = { task: PlannerTask; date: string; start: number; end: number; overlap: boolean };
+const isoDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const addPlannerDays = (value: string, amount: number) => { const d = new Date(`${value}T12:00:00`); d.setDate(d.getDate() + amount); return isoDate(d); };
+const weekStart = (value: string) => { const d = new Date(`${value}T12:00:00`); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return isoDate(d); };
+const clockToMinutes = (value: string) => { const [h, m] = value.split(":").map(Number); return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : 9 * 60; };
+const clockLabel = (minutes: number) => { const dayOffset = Math.floor(minutes / 1440); const wrapped = ((minutes % 1440) + 1440) % 1440; return `${String(Math.floor(wrapped / 60)).padStart(2, "0")}:${String(wrapped % 60).padStart(2, "0")}${dayOffset > 0 ? " +1d" : ""}`; };
+const durationLabel = (minutes: number) => `${Math.floor(minutes / 60) ? `${Math.floor(minutes / 60)}h ` : ""}${minutes % 60 ? `${minutes % 60}m` : Math.floor(minutes / 60) ? "" : "0m"}`.trim();
+function occursOn(task: PlannerTask, day: string) {
+  if (isTodoTask(task)) return false;
+  const recurrence = task.recurrence ?? "none";
+  if (recurrence === "none") return task.date === day;
+  if (day < task.date || (task.recurrenceEnd && day > task.recurrenceEnd)) return false;
+  const date = new Date(`${day}T12:00:00`), start = new Date(`${task.date}T12:00:00`);
+  if (recurrence === "daily") return true;
+  if (recurrence === "weekdays") return date.getDay() >= 1 && date.getDay() <= 5;
+  return date.getDay() === start.getDay();
+}
+function occurrenceDone(task: PlannerTask, day: string) {
+  return (task.recurrence && task.recurrence !== "none") ? Boolean(task.completedDates?.includes(day)) : task.done;
+}
+function occurrencesForDay(tasks: PlannerTask[], day: string): PlannerOccurrence[] {
+  const items = tasks.filter(task => occursOn(task, day)).map(task => {
+    const start = clockToMinutes(task.time);
+    const end = start + Math.max(1, task.minutes || 1);
+    return { task, date: day, start, end, overlap: false };
+  }).sort((a, b) => a.start - b.start || a.end - b.end);
+  return items.map((item, index) => ({ ...item, overlap: Boolean(items[index - 1] && item.start < items[index - 1].end) || Boolean(items[index + 1] && items[index + 1].start < item.end) }));
+}
+
 function Planner() {
-  const { data, update } = useLife(); const [view, setView] = useState("Day"); const [date, setDate] = useState(today()); const [draft, setDraft] = useState<LifeData["tasks"][number] | null>(null);
-  const currentPillars = activePillars(data);
-  const add = () => setDraft({ id: uid(), title: "", date, time: "09:00", minutes: 30, pillar: currentPillars[0], done: false, kind: "time-block" });
-  const addTodo = () => setDraft({ id: uid(), title: "", date, time: "", minutes: 0, pillar: currentPillars[0], done: false, kind: "todo" });
-  const anchor = new Date(`${date}T12:00:00`); const start = new Date(anchor); if (view === "Week") start.setDate(anchor.getDate() - (anchor.getDay() + 6) % 7); if (view === "Month") start.setDate(1);
+  const { data, update } = useLife(); const [view, setView] = useState("Day"); const [date, setDate] = useState(today()); const [draft, setDraft] = useState<PlannerTask | null>(null); const [now, setNow] = useState(() => new Date()); const touchStart = useRef<number | null>(null);
+  useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 60000); return () => window.clearInterval(timer); }, []);
+  const currentPillars = activePillars(data); const todayDate = today(); const dayOccurrences = occurrencesForDay(data.tasks, date);
+  const todoTasks = data.tasks.filter(task => isTodoTask(task) && task.date === date).sort((a, b) => Number(a.done) - Number(b.done) || a.title.localeCompare(b.title));
+  const anchor = new Date(`${date}T12:00:00`); const weekStartDate = weekStart(date); const start = new Date(`${view === "Month" ? `${date.slice(0, 8)}01` : view === "Week" ? weekStartDate : date}T12:00:00`);
   const count = view === "Day" ? 1 : view === "Week" ? 7 : new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0).getDate();
-  const days = Array.from({ length: count }, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; });
-  const scheduledTasks = data.tasks.filter(task => !isTodoTask(task));
-  const todoTasks = data.tasks.filter(isTodoTask).sort((a, b) => Number(a.done) - Number(b.done) || b.date.localeCompare(a.date));
+  const days = Array.from({ length: count }, (_, i) => addPlannerDays(isoDate(start), i));
+  const weekDays = Array.from({ length: 7 }, (_, i) => addPlannerDays(weekStartDate, i));
+  const selectedLabel = anchor.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+  const selectedMonth = anchor.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const add = () => setDraft({ id: uid(), title: "", date, time: "09:00", minutes: 30, pillar: currentPillars[0], done: false, kind: "time-block", recurrence: "none" });
+  const addTodo = () => setDraft({ id: uid(), title: "", date, time: "", minutes: 0, pillar: currentPillars[0], done: false, kind: "todo", recurrence: "none" });
+  const scheduleTodo = (task: PlannerTask) => setDraft({ ...task, kind: "time-block", date, time: "09:00", minutes: 30, recurrence: task.recurrence ?? "none" });
+  const shiftDay = (amount: number) => setDate(addPlannerDays(date, amount));
+  function toggleDone(task: PlannerTask, day = date) {
+    update(d => ({ ...d, tasks: d.tasks.map(t => {
+      if (t.id !== task.id) return t;
+      if (t.recurrence && t.recurrence !== "none") {
+        const completed = new Set(t.completedDates ?? []);
+        if (completed.has(day)) completed.delete(day);
+        else completed.add(day);
+        return { ...t, completedDates: [...completed].sort() };
+      }
+      return { ...t, done: !t.done };
+    }) }));
+  }
   function saveTimeBlock(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!draft) return;
-    const cleanDraft = { ...draft, title: draft.title.trim(), time: isTodoTask(draft) ? "" : draft.time, minutes: isTodoTask(draft) ? 0 : draft.minutes };
+    const cleanDraft: PlannerTask = { ...draft, title: draft.title.trim(), time: isTodoTask(draft) ? "" : draft.time, minutes: isTodoTask(draft) ? 0 : draft.minutes, recurrence: isTodoTask(draft) ? "none" : (draft.recurrence ?? "none"), recurrenceEnd: draft.recurrence === "none" ? "" : draft.recurrenceEnd };
     const minutesInput = event.currentTarget.elements.namedItem("duration-minutes");
     if (!isTodoTask(cleanDraft) && cleanDraft.minutes <= 0) {
-      if (minutesInput instanceof HTMLInputElement) {
-        minutesInput.setCustomValidity("Duration must be at least 1 minute.");
-        event.currentTarget.reportValidity();
-        minutesInput.setCustomValidity("");
-      }
+      if (minutesInput instanceof HTMLInputElement) { minutesInput.setCustomValidity("Duration must be at least 1 minute."); event.currentTarget.reportValidity(); minutesInput.setCustomValidity(""); }
       return;
     }
     update(d => ({ ...d, tasks: [...d.tasks.filter(t => t.id !== cleanDraft.id), cleanDraft] }));
-    setDraft(null);
+    setDate(cleanDraft.date || date); setDraft(null);
   }
-  return <><Heading section="Make time for what matters" title="A day with intention."><div className="le-inline"><Button secondary onClick={addTodo}><Plus size={16} />Add to-do</Button><Button onClick={add}><Plus size={16} />Add time block</Button></div></Heading><div className="le-pillar-legend" aria-label="Life pillar colors">{currentPillars.map(p=>{const palette=pillarPalette(data,p);return <span key={p} style={{"--pillar-base":palette.base,"--pillar-soft":palette.soft} as CSSProperties}><i />{p}</span>;})}</div><div className="le-row mb-6"><Tabs items={["Day", "Week", "Month"]} active={view} onChange={setView} /><input aria-label="Planner date" type="date" required value={date} onChange={e => { if (e.target.value) setDate(e.target.value); }} /></div><div className="le-date-strip" aria-label="Choose planner day">{Array.from({ length: 7 }, (_, i) => { const d = new Date(anchor); d.setDate(anchor.getDate() - (anchor.getDay() + 6) % 7 + i); const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; return <button key={value} aria-label={d.toLocaleDateString(undefined, {weekday:"long",day:"numeric",month:"long"})} aria-pressed={value === date} onClick={() => setDate(value)}><small>{d.toLocaleDateString(undefined, {weekday:"short"})}</small>{d.getDate()}</button>; })}</div><div className="le-planner-layout"><div className={`le-calendar le-calendar-${view.toLowerCase()}`}>{view === "Month" && Array.from({ length: (start.getDay() + 6) % 7 }, (_, i) => <div key={`blank-${i}`} className="le-calendar-blank" />)}{days.map(day => <section key={day} className="le-calendar-day" onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); update(d => ({ ...d, tasks: d.tasks.map(t => t.id === id && !isTodoTask(t) ? { ...t, date: day } : t) })); }}><button className="le-day-label" onClick={() => { setDate(day); setView("Day"); }}>{new Date(`${day}T12:00:00`).toLocaleDateString(undefined, { weekday: "short", day: "numeric" })}</button>{scheduledTasks.filter(t => t.date === day).sort((a, b) => a.time.localeCompare(b.time)).map(task => <button draggable onDragStart={e => e.dataTransfer.setData("text/plain", task.id)} key={task.id} style={taskColor(data, task)} className={`le-time-block ${task.done ? "le-completed" : ""}`} onClick={() => setDraft(task)}><small>{task.time} · {Math.floor(task.minutes / 60) > 0 ? `${Math.floor(task.minutes / 60)}h ` : ""}{task.minutes % 60 > 0 ? `${task.minutes % 60}m` : ""}</small><strong>{task.title}</strong><span>{task.pillar}</span>{task.done && <Check size={16} />}</button>)}{view === "Day" && !scheduledTasks.some(t => t.date === day) && <Empty title="Nothing planned yet." action="Add a time block" onClick={add} />}</section>)}</div><Card className="le-todo-panel"><div className="le-row"><div><p className="le-eyebrow">To-do list</p><h2>Tasks without a time block.</h2></div><Button secondary onClick={addTodo}><Plus size={16} />Add to-do</Button></div>{!todoTasks.length ? <Empty title="No checklist tasks yet." action="Add a to-do" onClick={addTodo} /> : <div className="le-todo-list">{todoTasks.map(task => <label key={task.id} className={`le-todo-item ${task.done ? "is-done" : ""}`} style={taskColor(data, task)}><input type="checkbox" checked={task.done} onChange={() => update(d => ({ ...d, tasks: d.tasks.map(t => t.id === task.id ? { ...t, done: !t.done } : t) }))} /><button type="button" onClick={() => setDraft(task)}><strong>{task.title}</strong><span>{task.pillar}</span></button></label>)}</div>}</Card></div>
-    {draft && <Modal title={isTodoTask(draft) ? "Edit to-do" : "Plan your time"} close={() => setDraft(null)}><form onSubmit={saveTimeBlock}><Field label={isTodoTask(draft) ? "Task" : "Title"}><input required value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} /></Field>{!isTodoTask(draft) && <div className="le-grid-two"><Field label="Date"><input type="date" required value={draft.date} onChange={e => setDraft({ ...draft, date: e.target.value })} /></Field><Field label="Time"><input type="time" required value={draft.time} onChange={e => setDraft({ ...draft, time: e.target.value })} /></Field></div>}{!isTodoTask(draft) && <fieldset><legend>Duration</legend><div className="le-grid-two"><Field label="Duration hours"><input type="number" min="0" max="24" step="1" value={Math.floor(draft.minutes / 60)} onChange={e => { const hours = Math.max(0, Math.min(24, e.target.value === "" ? 0 : Math.floor(Number(e.target.value)))); setDraft({ ...draft, minutes: hours * 60 + (hours === 24 ? 0 : draft.minutes % 60) }); }} /></Field><Field label="Duration minutes"><input name="duration-minutes" type="number" min="0" max={draft.minutes >= 1440 ? 0 : 59} step="1" value={draft.minutes % 60} onChange={e => setDraft({ ...draft, minutes: Math.floor(draft.minutes / 60) * 60 + Math.max(0, Math.min(draft.minutes >= 1440 ? 0 : 59, e.target.value === "" ? 0 : Math.floor(Number(e.target.value)))) })} /></Field></div></fieldset>}<Field label="Life pillar"><select required value={draft.pillar} onChange={e => setDraft({ ...draft, pillar: e.target.value })}>{[...new Set([...currentPillars, draft.pillar])].map(p => <option key={p}>{p}</option>)}</select></Field><div className="le-pillar-preview" style={taskColor(data, draft)}><i/><span>{draft.pillar}</span><strong>{draft.title || (isTodoTask(draft) ? "Checklist preview" : "Activity shade preview")}</strong></div><label className="le-check-row"><input type="checkbox" checked={draft.done} onChange={e => setDraft({ ...draft, done: e.target.checked })} />Completed</label><div className="le-row"><SaveButton>{isTodoTask(draft) ? "Save to-do" : "Save time block"}</SaveButton>{data.tasks.some(t => t.id === draft.id) && <IconButton title={isTodoTask(draft) ? "Delete to-do" : "Delete time block"} onClick={() => { update(d => ({ ...d, tasks: d.tasks.filter(t => t.id !== draft.id) })); setDraft(null); }}><Trash2 size={18} /></IconButton>}</div></form></Modal>}
+  const timeline: ReactNode[] = [];
+  let cursor = Math.min(8 * 60, dayOccurrences[0]?.start ?? 8 * 60);
+  let nowPlaced = false;
+  dayOccurrences.forEach(item => {
+    if (date === todayDate && !nowPlaced && nowMinutes <= item.start) { timeline.push(<div key="now-before" className="le-now-line"><span>{clockLabel(nowMinutes)}</span><strong>Now</strong></div>); nowPlaced = true; }
+    if (item.start - cursor >= 20) timeline.push(<div key={`gap-${item.task.id}`} className="le-time-gap"><span>{clockLabel(cursor)}</span><em>{durationLabel(item.start - cursor)} open</em></div>);
+    const done = occurrenceDone(item.task, item.date);
+    const height = Math.min(220, Math.max(76, item.task.minutes * 1.55));
+    timeline.push(<div key={`${item.task.id}-${item.date}`} className={`le-timeline-row ${item.overlap ? "has-overlap" : ""}`}>
+      <div className="le-time-stamp"><span>{clockLabel(item.start)}</span><small>{clockLabel(item.end)}</small></div>
+      <button draggable onDragStart={e => e.dataTransfer.setData("text/plain", item.task.id)} type="button" className={`le-time-block le-timeline-block ${done ? "le-completed" : ""}`} style={{ ...taskColor(data, item.task), minHeight: `${height}px` }} onClick={() => setDraft(item.task)}>
+        <span>{durationLabel(item.task.minutes)}{item.task.recurrence && item.task.recurrence !== "none" ? ` · ${item.task.recurrence}` : ""}</span>
+        <strong>{item.task.title}</strong>
+        <small>{item.task.notes || item.task.pillar}</small>
+        {item.overlap && <em>Overlap</em>}
+      </button>
+      <button type="button" className="le-scratch-toggle" aria-label={`${done ? "Reopen" : "Complete"} ${item.task.title}`} aria-pressed={done} onClick={() => toggleDone(item.task, item.date)}>{done ? <Check size={18} /> : null}</button>
+    </div>);
+    if (date === todayDate && !nowPlaced && nowMinutes > item.start && nowMinutes < item.end) { timeline.push(<div key="now-inside" className="le-now-line is-inside"><span>{clockLabel(nowMinutes)}</span><strong>Now</strong></div>); nowPlaced = true; }
+    cursor = Math.max(cursor, item.end);
+  });
+  if (date === todayDate && !nowPlaced) timeline.push(<div key="now-after" className="le-now-line"><span>{clockLabel(nowMinutes)}</span><strong>Now</strong></div>);
+  const unfinishedPast = date < todayDate ? dayOccurrences.filter(item => !occurrenceDone(item.task, item.date) && (!item.task.recurrence || item.task.recurrence === "none")) : [];
+  return <><Heading section="Make time for what matters" title="A day with intention."><div className="le-inline"><Button secondary onClick={addTodo}><Plus size={16} />Add to-do</Button><Button onClick={add}><Plus size={16} />Add time block</Button></div></Heading>
+    <div className="le-planner-top"><div><p className="le-eyebrow">{selectedMonth}</p><h2>{selectedLabel}</h2></div><div className="le-inline"><Tabs items={["Day", "Week", "Month"]} active={view} onChange={setView} /><IconButton title="Previous day" onClick={() => shiftDay(-1)}><ArrowLeft size={18} /></IconButton><IconButton title="Next day" onClick={() => shiftDay(1)}><ArrowRight size={18} /></IconButton><Button secondary onClick={() => setDate(todayDate)}><CalendarDays size={16} />Today</Button><input aria-label="Planner date" type="date" required value={date} onChange={e => { if (e.target.value) setDate(e.target.value); }} /></div></div>
+    <div className="le-date-strip" aria-label="Choose planner day">{weekDays.map(value => { const d = new Date(`${value}T12:00:00`); const dayCount = occurrencesForDay(data.tasks, value).length; return <button key={value} aria-label={d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })} aria-pressed={value === date} className={value === todayDate ? "is-today" : ""} onClick={() => setDate(value)}><small>{d.toLocaleDateString(undefined, { weekday: "short" })}</small><strong>{d.getDate()}</strong>{dayCount > 0 && <i>{dayCount}</i>}</button>; })}</div>
+    <div className="le-planner-layout"><div className={`le-calendar le-calendar-${view.toLowerCase()}`} onTouchStart={e => { touchStart.current = e.touches[0]?.clientX ?? null; }} onTouchEnd={e => { const startX = touchStart.current; if (startX === null) return; const delta = (e.changedTouches[0]?.clientX ?? startX) - startX; if (Math.abs(delta) > 70) shiftDay(delta < 0 ? 1 : -1); touchStart.current = null; }}>
+      {view === "Day" ? <section className="le-day-timeline" onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); update(d => ({ ...d, tasks: d.tasks.map(t => t.id === id ? { ...t, kind: "time-block", date, time: t.time || "09:00", minutes: t.minutes || 30 } : t) })); }}>
+        <div className="le-day-summary"><div><p className="le-eyebrow">Timeline</p><h2>{dayOccurrences.length ? `${dayOccurrences.length} planned ${dayOccurrences.length === 1 ? "activity" : "activities"}` : "Your day is yours to shape."}</h2></div><span>{dayOccurrences.filter(item => occurrenceDone(item.task, item.date)).length}/{dayOccurrences.length} complete</span></div>
+        {dayOccurrences.length ? <div className="le-timeline-list">{timeline}</div> : <Empty title="Your day is yours to shape." action="Add a time block" onClick={add} />}
+        {unfinishedPast.length > 0 && <div className="le-fresh-start"><p className="le-eyebrow">Fresh start</p><h3>Unfinished from this day</h3>{unfinishedPast.map(item => <div key={item.task.id} className="le-row"><span>{item.task.title}</span><Button secondary onClick={() => update(d => ({ ...d, tasks: d.tasks.map(t => t.id === item.task.id ? { ...t, date: todayDate } : t) }))}>Move to today</Button></div>)}</div>}
+      </section> : <>
+        {view === "Month" && Array.from({ length: (start.getDay() + 6) % 7 }, (_, i) => <div key={`blank-${i}`} className="le-calendar-blank" />)}
+        {days.map(day => { const items = occurrencesForDay(data.tasks, day); return <section key={day} className={`le-calendar-day ${day === todayDate ? "is-today" : ""}`} onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); update(d => ({ ...d, tasks: d.tasks.map(t => t.id === id ? { ...t, kind: "time-block", date: day, time: t.time || "09:00", minutes: t.minutes || 30 } : t) })); }}><button className="le-day-label" onClick={() => { setDate(day); setView("Day"); }}>{new Date(`${day}T12:00:00`).toLocaleDateString(undefined, { weekday: "short", day: "numeric" })}</button>{items.map(item => <button draggable onDragStart={e => e.dataTransfer.setData("text/plain", item.task.id)} key={`${item.task.id}-${day}`} style={taskColor(data, item.task)} className={`le-time-block ${occurrenceDone(item.task, day) ? "le-completed" : ""}`} onClick={() => setDraft(item.task)}><small>{item.task.time} · {durationLabel(item.task.minutes)}</small><strong>{item.task.title}</strong><span>{item.task.pillar}</span></button>)}</section>; })}
+      </>}</div>
+      <Card className="le-todo-panel"><div className="le-row"><div><p className="le-eyebrow">To-do list</p><h2>Tasks for this day.</h2></div><Button secondary onClick={addTodo}><Plus size={16} />Add to-do</Button></div>{!todoTasks.length ? <Empty title="No checklist tasks for this day." action="Add a to-do" onClick={addTodo} /> : <div className="le-todo-list">{todoTasks.map(task => <div key={task.id} className={`le-todo-item ${task.done ? "is-done" : ""}`} style={taskColor(data, task)}><input aria-label={`Complete ${task.title}`} type="checkbox" checked={task.done} onChange={() => toggleDone(task)} /><button type="button" onClick={() => setDraft(task)}><strong>{task.title}</strong><span>{task.pillar}</span></button><IconButton title={`Schedule ${task.title}`} onClick={() => scheduleTodo(task)}><Clock size={16} /></IconButton></div>)}</div>}</Card></div>
+    {draft && <Modal title={isTodoTask(draft) ? "Edit to-do" : "Plan your time"} close={() => setDraft(null)}><form onSubmit={saveTimeBlock}><Field label={isTodoTask(draft) ? "Task" : "Title"}><input required value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} /></Field>{isTodoTask(draft) ? <><Field label="To-do date"><input type="date" required value={draft.date} onChange={e => setDraft({ ...draft, date: e.target.value })} /></Field><Button secondary onClick={() => setDraft({ ...draft, kind: "time-block", date: draft.date || date, time: "09:00", minutes: 30, recurrence: "none" })}><Clock size={16} />Schedule this task</Button></> : <><div className="le-grid-two"><Field label="Date"><input type="date" required value={draft.date} onChange={e => setDraft({ ...draft, date: e.target.value })} /></Field><Field label="Time"><input type="time" required value={draft.time} onChange={e => setDraft({ ...draft, time: e.target.value })} /></Field></div><fieldset><legend>Duration</legend><div className="le-grid-two"><Field label="Duration hours"><input type="number" min="0" max="24" step="1" value={Math.floor(draft.minutes / 60)} onChange={e => { const hours = Math.max(0, Math.min(24, e.target.value === "" ? 0 : Math.floor(Number(e.target.value)))); setDraft({ ...draft, minutes: hours * 60 + (hours === 24 ? 0 : draft.minutes % 60) }); }} /></Field><Field label="Duration minutes"><input name="duration-minutes" type="number" min="0" max={draft.minutes >= 1440 ? 0 : 59} step="1" value={draft.minutes % 60} onChange={e => setDraft({ ...draft, minutes: Math.floor(draft.minutes / 60) * 60 + Math.max(0, Math.min(draft.minutes >= 1440 ? 0 : 59, e.target.value === "" ? 0 : Math.floor(Number(e.target.value)))) })} /></Field></div></fieldset><div className="le-grid-two"><Field label="Repeats"><select value={draft.recurrence ?? "none"} onChange={e => setDraft({ ...draft, recurrence: e.target.value as PlannerTask["recurrence"] })}><option value="none">Does not repeat</option><option value="daily">Daily</option><option value="weekdays">Weekdays</option><option value="weekly">Weekly</option></select></Field><Field label="Repeat until"><input type="date" value={draft.recurrenceEnd ?? ""} disabled={!draft.recurrence || draft.recurrence === "none"} onChange={e => setDraft({ ...draft, recurrenceEnd: e.target.value })} /></Field></div><Button secondary onClick={() => setDraft({ ...draft, kind: "todo", time: "", minutes: 0, recurrence: "none", recurrenceEnd: "" })}>Unschedule</Button></>}<Field label="Notes"><textarea rows={3} value={draft.notes ?? ""} onChange={e => setDraft({ ...draft, notes: e.target.value })} /></Field><Field label="Life pillar"><select required value={draft.pillar} onChange={e => setDraft({ ...draft, pillar: e.target.value })}>{[...new Set([...currentPillars, draft.pillar])].map(p => <option key={p}>{p}</option>)}</select></Field><div className="le-pillar-preview" style={taskColor(data, draft)}><i/><span>{draft.pillar}</span><strong>{draft.title || (isTodoTask(draft) ? "Checklist preview" : "Activity shade preview")}</strong></div><label className="le-check-row"><input type="checkbox" checked={occurrenceDone(draft, date)} onChange={() => setDraft(current => { if (!current) return current; if (current.recurrence && current.recurrence !== "none") { const completed = new Set(current.completedDates ?? []); if (completed.has(date)) completed.delete(date); else completed.add(date); return { ...current, completedDates: [...completed].sort() }; } return { ...current, done: !current.done }; })} />Completed</label><div className="le-row"><SaveButton>{isTodoTask(draft) ? "Save to-do" : "Save time block"}</SaveButton>{data.tasks.some(t => t.id === draft.id) && <IconButton title={isTodoTask(draft) ? "Delete to-do" : "Delete time block"} onClick={() => { update(d => ({ ...d, tasks: d.tasks.filter(t => t.id !== draft.id) })); setDraft(null); }}><Trash2 size={18} /></IconButton>}</div></form></Modal>}
   </>;
 }
 

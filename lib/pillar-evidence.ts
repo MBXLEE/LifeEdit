@@ -16,5 +16,13 @@ export function pillarEvidence(data:LifeData,date:string) {
     Spiritual:[signal(data.prayers.some(p=>!p.archived&&recent(p.date)),"Recorded a prayer","No recent prayer recorded","Add a prayer or reflection."),signal(data.studyPlans.some(p=>!p.archived&&p.progress>0),"Progressed a study plan","No study progress recorded","Update a reading or study plan."),signal(data.journals.some(j=>j.pillar==="Spiritual"&&recent(j.date)),"Wrote a spiritual reflection","No recent spiritual reflection","Reflect on your spiritual practice.")],
     "Personal Growth":[signal(data.focus.some(f=>recent(f.date)),"Completed focused work","No recent focus session completed","Make time for one focused session."),signal(data.habits.some(h=>h.direction==="build"&&h.dates.some(recent)),"Kept a daily habit","No recent habit completion recorded","Keep one small daily promise."),signal(goals("Personal Growth"),"Completed a growth goal","No completed personal growth goal recorded","Review the next step toward your growth goal.")]
   };
-  return Object.entries(signals).map(([pillar,items])=>({pillar,score:Math.round(items.filter(s=>s.met).length/items.length*100),items}));
+  const active=data.lifePillars?.length?data.lifePillars:Object.keys(signals);
+  return active.map(pillar=>{
+    const items=signals[pillar] ?? [
+      signal(data.journals.some(j=>j.pillar===pillar&&recent(j.date)),`Wrote in ${pillar}` ,`No recent ${pillar} reflection`,`Write a short ${pillar} reflection.`),
+      signal(data.tasks.some(t=>t.done&&t.pillar===pillar&&recent(t.date)),`Completed a ${pillar} action`,`No completed ${pillar} action recorded recently`,`Plan one small ${pillar} action.`),
+      signal(data.goals.some(g=>!g.archived&&g.pillars.includes(pillar)&&g.progress>0),`Made progress on a ${pillar} goal`,`No active ${pillar} goal progress recorded`,`Connect one goal to ${pillar}.`)
+    ];
+    return {pillar,score:Math.round(items.filter(s=>s.met).length/items.length*100),items};
+  });
 }

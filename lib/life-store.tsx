@@ -29,7 +29,10 @@ export type VisionImportance = "Low" | "Medium" | "High" | "Very High";
 export type VisionBoardLink = { enabled: boolean; images: string[]; phrase: string; importance: VisionImportance };
 export type Goal = { id: string; title: string; horizon: string; parent: string; pillars: string[]; progress: number; archived: boolean; due: string; notes: string; visionBoard?: VisionBoardLink };
 export type Habit = { id: string; name: string; direction: "build" | "quit"; dates: string[]; start: string; setbacks: { date: string; note: string }[] };
-export type Task = { id: string; title: string; date: string; time: string; minutes: number; pillar: string; done: boolean; kind?: "time-block" | "todo" };
+export type Task = {
+  id: string; title: string; date: string; time: string; minutes: number; pillar: string; done: boolean; kind?: "time-block" | "todo";
+  notes?: string; recurrence?: "none" | "daily" | "weekdays" | "weekly"; recurrenceEnd?: string; completedDates?: string[];
+};
 export type Workout = { id: string; name: string; category: string; warmup: string; cooldown?: string; notes?: string; archived?: boolean; exercises: (Omit<Exercise, "category" | "seconds" | "notes"> & Partial<Pick<Exercise, "category" | "seconds" | "notes">>)[] };
 export type JournalPhoto = { id: string; source: string; order: number; name?: string; createdAt: string };
 export type ResetAccountability = "Strict" | "Accountability" | "Flexible";

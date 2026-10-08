@@ -11,6 +11,21 @@ export function createDemoData(base: LifeData, now = octoberDemoDate): LifeData 
   const monthly = (start: string) => ({ recurring: true as const, recurrenceFrequency: "Monthly" as const, recurrenceInterval: 1, recurrenceStart: start });
   const assessment = Object.fromEntries(base.areas.map((area, i) => [area, [7, 8, 6, 7, 8, 7][i] ?? 7]));
   const exercise = { ...base.exercises[0], id: "demo-exercise", name: "Bench Press", sets: 3, reps: 10, weight: 20, rest: 60, seconds: 0, notes: "Adjust the plan to your own routine." };
+  const journalHistory: (LifeData["journals"][number] & { rating?: number })[] = [
+    { id: "demo-journal-finance-1", title: "Looking at the numbers honestly", template: "pillar-0", pillar: "Financial", body: "I checked the budget even though I wanted to avoid it. The shortfall is real, but seeing it clearly feels better than guessing.", date: date(-78), rating: 4 },
+    { id: "demo-journal-physical-1", title: "Slow return to movement", template: "pillar-1", pillar: "Physical", body: "A short walk after work helped. I am not where I want to be yet, but I am proving that I can begin again gently.", date: date(-63), rating: 5 },
+    { id: "demo-journal-growth-1", title: "Course notes and confidence", template: "pillar-5", pillar: "Personal Growth", body: "Studied for forty minutes and rewrote the difficult section in my own words. The topic finally started to feel less intimidating.", date: date(-51), rating: 5 },
+    { id: "demo-journal-social-1", title: "Dinner with family", template: "pillar-3", pillar: "Social", body: "I stayed present at dinner instead of half-working from my phone. It made the evening feel lighter.", date: date(-43), rating: 7 },
+    { id: "demo-journal-career-1", title: "CV refresh", template: "", pillar: "Career", body: "Updated the project bullets and noticed how much more clearly I can talk about my work now.", date: date(-35), rating: 6 },
+    { id: "demo-journal-mental-1", title: "A tight week", template: "pillar-2", pillar: "Mental & Emotional", body: "I felt stretched today. The useful part was admitting it early instead of pretending I was fine until the evening.", date: date(-29), rating: 4 },
+    { id: "demo-journal-spiritual-1", title: "Quiet before work", template: "pillar-4", pillar: "Spiritual", body: "Read before opening my messages. The quiet did not fix the day, but it changed how I entered it.", date: date(-21), rating: 6 },
+    { id: "demo-journal-finance-2", title: "Groceries and trade-offs", template: "pillar-0", pillar: "Financial", body: "Groceries were higher than planned. I adjusted the week instead of ignoring it, which felt like progress even with the frustration.", date: date(-14), rating: 5 },
+    { id: "demo-reset-journal-1", title: "Project 50 daily progress", template: "pillar-5", pillar: "Personal Growth", body: "The morning routine helped the day feel intentional. I tracked the rules honestly and kept going.", date: date(-3), rating: 7, photos: [{ id: "demo-journal-photo-1", source: "https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=900&q=80", order: 0, name: "Notebook and coffee", createdAt: new Date(`${date(-3)}T08:00:00`).toISOString() }] },
+    { id: "demo-journal-1", title: "A small win", template: "pillar-2", pillar: "Mental & Emotional", body: "I made space for a walk and returned to work feeling clearer. Tomorrow I will protect that time again.", date: date(-1), rating: 6 },
+    { id: "demo-reset-journal-2", title: "Bible Reset reflection", template: "pillar-4", pillar: "Spiritual", body: "Reading before work made the whole morning feel calmer.", date: date(-1), rating: 7 },
+    { id: "demo-journal-2", title: "This week's intention", template: "pillar-5", pillar: "Personal Growth", body: "Focus on one meaningful task before opening social media.", date: date(), rating: 8 },
+    { id: "demo-journal-career-2", title: "A realistic next step", template: "", pillar: "Career", body: "I did not finish everything, but I chose the next concrete step for the portfolio and put it on the planner.", date: date(), rating: 6 }
+  ];
   return {
     ...base, name: "Demo User", theme: "Ocean", onboarded: true, assessment,
     lifePillars: [...base.lifePillars, "Career"],
@@ -24,21 +39,23 @@ export function createDemoData(base: LifeData, now = octoberDemoDate): LifeData 
     reviews: [{ id: "demo-review", date: date(), ratings: assessment, notes: "Starting demo life assessment." }],
     reviewSchedule: { ...base.reviewSchedule, start: date() },
     tasks: [
-      { id: "demo-task-1", title: "Morning workout", date: date(), time: "07:00", minutes: 45, pillar: "Physical", done: true },
-      { id: "demo-task-2", title: "Plan the week", date: date(), time: "09:00", minutes: 30, pillar: "Personal Growth", done: false },
-      { id: "demo-task-3", title: "Evening reflection", date: date(), time: "20:00", minutes: 15, pillar: "Mental & Emotional", done: false },
+      { id: "demo-task-1", title: "Morning workout", date: date(), time: "07:00", minutes: 45, pillar: "Physical", done: true, notes: "Upper body strength and a short stretch." },
+      { id: "demo-task-2", title: "Plan the week", date: date(), time: "09:00", minutes: 30, pillar: "Personal Growth", done: false, recurrence: "weekly" },
+      { id: "demo-task-3", title: "Evening reflection", date: date(), time: "20:00", minutes: 15, pillar: "Mental & Emotional", done: false, recurrence: "daily", completedDates: [date(-1)] },
+      { id: "demo-task-4", title: "Deep work on CV refresh", date: date(), time: "10:00", minutes: 90, pillar: "Career", done: false, notes: "Update project bullets and export the latest version." },
+      { id: "demo-task-5", title: "Coffee with Alex", date: date(), time: "11:00", minutes: 45, pillar: "Social", done: false },
+      { id: "demo-task-6", title: "Buy groceries", date: date(), time: "", minutes: 0, pillar: "Financial", done: false, kind: "todo" },
+      { id: "demo-task-7", title: "Book dentist appointment", date: date(), time: "", minutes: 0, pillar: "Physical", done: false, kind: "todo" },
+      { id: "demo-task-8", title: "Weekly budget review", date: date(1), time: "18:00", minutes: 35, pillar: "Financial", done: false },
+      { id: "demo-task-9", title: "Sunday reset", date: date(2), time: "16:00", minutes: 75, pillar: "Mental & Emotional", done: false },
     ],
     habits: [
       { id: "demo-habit-1", name: "Read for 20 minutes", direction: "build", dates: [date(-2), date(-1), date()], start: date(-7), setbacks: [] },
       { id: "demo-habit-2", name: "Daily walk", direction: "build", dates: [date(-3), date(-1)], start: date(-7), setbacks: [] },
       { id: "demo-habit-3", name: "Reduce late-night scrolling", direction: "quit", dates: [], start: date(-12), setbacks: [] },
     ],
-    journals: [
-      { id: "demo-journal-1", title: "A small win", template: "pillar-2", pillar: "Mental & Emotional", body: "I made space for a walk and returned to work feeling clearer. Tomorrow I will protect that time again.", date: date(-1) },
-      { id: "demo-journal-2", title: "This week's intention", template: "pillar-5", pillar: "Personal Growth", body: "Focus on one meaningful task before opening social media.", date: date() },
-      { id: "demo-reset-journal-1", title: "Project 50 daily progress", template: "pillar-5", pillar: "Personal Growth", body: "The morning routine helped the day feel intentional. I tracked the rules honestly and kept going.", date: date(-3) },
-      { id: "demo-reset-journal-2", title: "Bible Reset reflection", template: "pillar-4", pillar: "Spiritual", body: "Reading before work made the whole morning feel calmer.", date: date(-1) },
-    ],
+    journals: journalHistory.map(({ rating, ...journal }) => journal),
+    journalRatings: journalHistory.flatMap(journal => journal.rating ? [{ id: `rating-${journal.id}`, journalId: journal.id, pillar: journal.pillar, rating: journal.rating, date: journal.date }] : []),
     goals: [
       { id: "demo-goal-1", title: "Build an emergency fund", horizon: "Annual", parent: "", pillars: ["Financial"], progress: 40, archived: false, due: date(180), notes: "A little each month adds up." },
       { id: "demo-goal-2", title: "Move three times a week", horizon: "Monthly", parent: "", pillars: ["Physical"], progress: 50, archived: false, due: date(30), notes: "Choose activities I enjoy." },
