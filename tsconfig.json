@@ -36,10 +36,11 @@
     ".next-finance-clean/types/**/*.ts",
     ".next-finance/types/**/*.ts",
     ".next-refinements/types/**/*.ts",
+    ".next-reserved/types/**/*.ts",
     ".next-v2/types/**/*.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
-    ".next-reserved/types/**/*.ts"
+    ".next-mobile/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

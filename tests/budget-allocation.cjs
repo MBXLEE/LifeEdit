@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict');const fs=require('node:fs');const ts=require('typescript');const Module=require('node:module');const path=require('node:path');
 const file=path.resolve('lib/refinements.ts'),mod=new Module(file,module);mod._compile(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,file);
-const {budgetAllocation}=mod.exports;
+const {budgetAllocation,isPlannedFinanceTransaction,financeEventDate,financeEventLabel}=mod.exports;
 const tx=(amount,type='Expense',category='Food',currency='ZAR',date='2026-09-17')=>({amount,type,category,currency,date});
 const b=(amount,category='Food',currency='ZAR',month='2026-09')=>({amount,category,currency,month});
 const balance=(rows,budgets)=>budgetAllocation(rows,budgets,'2026-09','ZAR');
@@ -17,4 +17,9 @@ assert.equal(balance([income,tx(500),tx(2000,'Expense','Food','USD'),tx(3000,'Ex
 assert.equal(balance([tx(0.3,'Income'),tx(0.1)],[b(0.2)]).available,0.1);
 assert.equal(balance([income],[b(11000)]).available,-1000);
 assert.equal(balance([income,tx(2500)],[b(2000),b(2000,'Transport')]).available,5500);
-console.log('PASS: budget reservation, no double counting, overspending, outside spending, edits/deletion, savings, month/currency isolation and cents.');
+const scheduled={amount:1200,type:'Expense',category:'Food',currency:'ZAR',date:'2026-10-05',dueDate:'2026-10-05'};
+assert.equal(isPlannedFinanceTransaction(scheduled,'2026-09-25'),true);
+assert.equal(isPlannedFinanceTransaction({...scheduled,paid:true,paidDate:'2026-09-25',date:'2026-09-25'},'2026-09-25'),false);
+assert.equal(financeEventDate({...scheduled,paid:true,paidDate:'2026-09-25'}),'2026-09-25');
+assert.equal(financeEventLabel({...scheduled,paid:true,paidDate:'2026-09-25'}),'Paid Expense');
+console.log('PASS: budget reservation, no double counting, overspending, outside spending, edits/deletion, savings, paid scheduled bills, month/currency isolation and cents.');

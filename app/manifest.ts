@@ -6,13 +6,13 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "The Life Edit",
     short_name: "LifeEdit",
     description: "A calm personal life operating system for intentional growth.",
-    start_url: "/",
+    start_url: "/dashboard",
     scope: "/",
     display: "standalone",
-    display_override: ["standalone", "minimal-ui"],
+    display_override: ["standalone"],
     background_color: "#eef3f7",
     theme_color: "#eef3f7",
-    orientation: "portrait",
+    orientation: "any",
     categories: ["productivity", "lifestyle"],
     icons: [
       {

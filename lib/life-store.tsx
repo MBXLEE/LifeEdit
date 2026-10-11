@@ -7,36 +7,81 @@ import type { Route } from "next";
 import { advanceFocus, extraDefaults, type ExtraData, type Exercise } from "@/lib/life-domain";
 import { refinementDefaults, type RefinementData, type Classification } from "@/lib/refinements";
 import { defaultNotificationSettings, type NotificationSettings } from "@/lib/notifications";
+import { isDemoMode } from "@/lib/app-mode";
+import { activeDemoProfile, loadDemoWorkspace, saveDemoWorkspace, RESET_KEY, type DemoProfile } from "@/lib/demo-storage";
 
 export const pillars = ["Financial", "Physical", "Mental & Emotional", "Social", "Spiritual", "Personal Growth"];
 export const themeNames = ["Ocean", "Blush", "Sage", "Cream", "Midnight"] as const;
 export type Theme = typeof themeNames[number];
-export const uid = () => crypto.randomUUID();
+export const uid = () => {
+  const cryptoApi = globalThis.crypto;
+  if (typeof cryptoApi?.randomUUID === "function") return cryptoApi.randomUUID();
+  if (typeof cryptoApi?.getRandomValues === "function") {
+    return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, char =>
+      (Number(char) ^ (cryptoApi.getRandomValues(new Uint8Array(1))[0] & (15 >> (Number(char) / 4)))).toString(16)
+    );
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}-${Math.random().toString(36).slice(2, 10)}`;
+};
 export function today() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
-export const configured = () => Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-export type Goal = { id: string; title: string; horizon: string; parent: string; pillars: string[]; progress: number; archived: boolean; due: string; notes: string };
+export const configured = () => !isDemoMode && Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+export type VisionImportance = "Low" | "Medium" | "High" | "Very High";
+export type VisionBoardLink = { enabled: boolean; images: string[]; phrase: string; importance: VisionImportance };
+export type Goal = { id: string; title: string; horizon: string; parent: string; pillars: string[]; progress: number; archived: boolean; due: string; notes: string; visionBoard?: VisionBoardLink };
 export type Habit = { id: string; name: string; direction: "build" | "quit"; dates: string[]; start: string; setbacks: { date: string; note: string }[] };
-export type Task = { id: string; title: string; date: string; time: string; minutes: number; pillar: string; done: boolean };
-export type ResetActivity = { id: string; name: string; pillar: string; notes: string; completedDates: string[] };
-export type LifeResetProgram = { id: string; title: string; description: string; duration: number; start: string; status: "Active" | "Paused" | "Completed"; activities: ResetActivity[] };
+export type Task = {
+  id: string; title: string; date: string; time: string; minutes: number; pillar: string; done: boolean; kind?: "time-block" | "todo";
+  notes?: string; recurrence?: "none" | "daily" | "weekdays" | "weekly"; recurrenceEnd?: string; completedDates?: string[];
+};
 export type Workout = { id: string; name: string; category: string; warmup: string; cooldown?: string; notes?: string; archived?: boolean; exercises: (Omit<Exercise, "category" | "seconds" | "notes"> & Partial<Pick<Exercise, "category" | "seconds" | "notes">>)[] };
+export type JournalPhoto = { id: string; source: string; order: number; name?: string; createdAt: string };
+export type ResetAccountability = "Strict" | "Accountability" | "Flexible";
+export type ResetStatus = "draft" | "scheduled" | "active" | "completed" | "failed" | "abandoned";
+export type ResetIntensity = "Gentle" | "Balanced" | "Intense";
+export type ResetCommitmentType = "daily" | "specific-days" | "weekly-quantity" | "weekly-recurring" | "avoidance" | "limit" | "photo";
+export type ResetLinkedFeature = "Fitness" | "Habits" | "Journal" | "Planner" | "Finance" | "Goals" | "Spiritual" | "Focus";
+export type ResetCommitment = {
+  id: string; title: string; type: ResetCommitmentType; required: boolean; pillar: string;
+  description?: string; scheduleDays?: number[]; targetPerWeek?: number; everyNDays?: number;
+  limitAmount?: number; limitUnit?: string; linkedFeature?: ResetLinkedFeature; sourceHint?: string;
+};
+export type ResetActivity = { id: string; commitmentId: string; date: string; source: "reset" | "fitness" | "habit" | "journal" | "planner" | "finance" | "spiritual" | "focus"; externalId?: string; note?: string; value?: number };
+export type ResetProgressPhoto = { id: string; source: string; date: string; label: string; note?: string };
+export type ResetChangeLog = { id: string; date: string; day: number; text: string };
+export type ResetRestore = { id: string; date: string; window: string; note: string };
+export type ResetShareSettings = { publicTitle: string; showName: boolean; showDates: boolean; showStats: boolean; showMisses: boolean; showPhotos: boolean; showReflection: boolean; statement: string };
+export type LifeResetProgram = {
+  id: string; templateId?: string; name: string; publicName?: string; why: string; outcome: string;
+  startDate: string; endDate: string; duration: number; pillars: string[]; status: ResetStatus;
+  accountability: ResetAccountability; intensity: ResetIntensity; restoreAllowance: number; editAllowance: number;
+  commitments: ResetCommitment[]; activities: ResetActivity[]; photos: ResetProgressPhoto[];
+  changes: ResetChangeLog[]; restores: ResetRestore[]; completionReflection?: string; completedAt?: string;
+  share: ResetShareSettings; createdAt: string; updatedAt: string;
+};
 export type LifeData = ExtraData & RefinementData & {
   version: 2; name: string; theme: Theme; onboarded: boolean;
   assessment: Record<string, number>; areas: string[]; priorities: string[];
   identity: string; vision: string; mission: string; lifestyle: string;
-  goals: Goal[]; habits: Habit[]; tasks: Task[]; lifeResets: LifeResetProgram[];
+  lifePillars: string[];
+  goals: Goal[]; habits: Habit[]; tasks: Task[];
   templates: { id: string; name: string; pillar: string; prompts: string[] }[];
-  journals: { id: string; title: string; template: string; pillar: string; body: string; date: string }[];
+  journals: { id: string; title: string; template: string; pillar: string; body: string; date: string; photos?: JournalPhoto[] }[];
   currencies: { code: string; name: string; symbol: string }[]; currency: string;
   categories: string[]; budgets: { id: string; category: string; amount: number; currency: string; month: string }[];
-  transactions: { id: string; title: string; category: string; amount: number; type: string; classification?: Classification | ""; currency: string; date: string }[];
+  transactions: { id: string; title: string; category: string; amount: number; type: string; classification?: Classification | ""; currency: string; date: string; plannedDate?: string; dueDate?: string; paid?: boolean; paidDate?: string; status?: "Upcoming" | "Paid" | "Missed"; recurring?: boolean; recurrenceFrequency?: "Weekly" | "Biweekly" | "Monthly" | "Quarterly" | "Yearly"; recurrenceInterval?: number; recurrenceStart?: string; recurrenceEnd?: string }[];
   workoutTypes: string[]; workouts: Workout[]; workoutLogs: { id: string; name: string; date: string; minutes: number; volume: number; exercises?: Workout["exercises"]; notes?: string }[];
   focusTypes: string[]; focus: { id: string; name: string; seconds: number; date: string }[];
-  board: { id: string; title: string; url: string; category?: string; notes?: string; goalId?: string }[];
+  board: { id: string; title: string; url: string; images?: string[]; category?: string; notes?: string; goalId?: string; kind?: string; target?: number; saved?: number; currency?: string; quote?: string; phrase?: string; importance?: VisionImportance; coachNote?: string }[];
   notificationSettings: NotificationSettings;
+  lifeResets: LifeResetProgram[];
 };
+function addIsoDays(value: string, amount: number) {
+  const date = new Date(`${value}T12:00:00`);
+  date.setDate(date.getDate() + amount);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
 export function emptyData(): LifeData {
-  return { ...extraDefaults(), ...refinementDefaults(), version: 2, name: "", theme: "Ocean", onboarded: false, assessment: {}, areas: [...pillars], priorities: [], identity: "", vision: "", mission: "", lifestyle: "", goals: [], habits: [], tasks: [], lifeResets: [],
+  return { ...extraDefaults(), ...refinementDefaults(), version: 2, name: "", theme: "Ocean", onboarded: false, assessment: {}, areas: [...pillars], priorities: [], identity: "", vision: "", mission: "", lifestyle: "", lifePillars: [...pillars], goals: [], habits: [], tasks: [],
     templates: pillars.map((pillar, i) => ({ id: `pillar-${i}`, name: pillar, pillar, prompts: [
       ["What financial decision did I make today?", "Did I stay within budget?"],
       ["How did I care for my body today?", "What health goal did I work towards?"],
@@ -44,17 +89,64 @@ export function emptyData(): LifeData {
       ["Who did I connect with today?", "How can I strengthen important relationships?"],
       ["What did I learn during reflection today?", "What am I praying for?"],
       ["What skill am I improving?", "What progress did I make?"]
-    ][i] })), journals: [], currencies: [{ code: "ZAR", name: "South African rand", symbol: "R" }, { code: "USD", name: "US dollar", symbol: "$" }, { code: "GBP", name: "British pound", symbol: "£" }, { code: "EUR", name: "Euro", symbol: "€" }], currency: "ZAR", categories: ["Housing", "Utilities", "Food", "Transport", "Entertainment", "Savings", "Investments", "Health", "Giving"], budgets: [], transactions: [], workoutTypes: ["Full Body", "Upper Body", "Lower Body", "Push", "Pull", "Legs", "Cardio", "Core", "Mobility", "Recovery"], workouts: [], workoutLogs: [], focusTypes: ["Study", "Deep Work", "Reading", "Work"], focus: [], board: [], notificationSettings: defaultNotificationSettings() };
+    ][i] })), journals: [], currencies: [{ code: "ZAR", name: "South African rand", symbol: "R" }, { code: "USD", name: "US dollar", symbol: "$" }, { code: "GBP", name: "British pound", symbol: "£" }, { code: "EUR", name: "Euro", symbol: "€" }], currency: "ZAR", categories: ["Housing", "Utilities", "Food", "Transport", "Entertainment", "Savings", "Investments", "Health", "Giving"], budgets: [], transactions: [], workoutTypes: ["Full Body", "Upper Body", "Lower Body", "Push", "Pull", "Legs", "Cardio", "Core", "Mobility", "Recovery"], workouts: [], workoutLogs: [], focusTypes: ["Study", "Deep Work", "Reading", "Work"], focus: [], board: [], notificationSettings: defaultNotificationSettings(), lifeResets: [] };
 }
 function withDefaults(raw: Partial<LifeData>): LifeData {
   const base = emptyData();
+  const lifePillars = Array.isArray(raw.lifePillars) && raw.lifePillars.length ? raw.lifePillars : base.lifePillars;
   const notificationSettings = raw.notificationSettings ? {
     ...base.notificationSettings,
     ...raw.notificationSettings,
     categories: { ...base.notificationSettings.categories, ...raw.notificationSettings.categories },
     reminderTimes: { ...base.notificationSettings.reminderTimes, ...raw.notificationSettings.reminderTimes }
   } : base.notificationSettings;
-  return { ...base, ...raw, notificationSettings };
+  const goals = (raw.goals ?? base.goals).map(goal => ({ ...goal, visionBoard: goal.visionBoard ? { enabled: Boolean(goal.visionBoard.enabled), images: goal.visionBoard.images?.slice(0, 6) ?? [], phrase: goal.visionBoard.phrase ?? "", importance: goal.visionBoard.importance ?? "Medium" } : undefined }));
+  const board = (raw.board ?? base.board).map(item => {
+    const images = (item.images?.length ? item.images : item.url ? [item.url] : []).slice(0, 6);
+    return { ...item, url: item.url ?? images[0] ?? "", images, phrase: item.phrase ?? item.quote ?? "", importance: item.importance ?? "Medium" };
+  });
+  const lifeResets = (raw.lifeResets ?? base.lifeResets).map(reset => {
+    const standardProject50 = reset.id === "demo-reset-project-50" || (reset.templateId === "project-50" && reset.commitments?.some(item => item.title === "Gym or intentional movement"));
+    const normalizedProject = standardProject50 ? {
+      ...reset,
+      why: "Rebuild routine, movement, reading, skill growth, nutrition and daily tracking for 50 days.",
+      outcome: "A calmer morning routine, daily exercise, consistent reading, and stronger focus blocks.",
+      commitments: [
+        { id: "p50-wake", title: "Wake up before 8am", type: "daily" as const, required: true, pillar: "Mental & Emotional", linkedFeature: "Habits" as const, sourceHint: "wake" },
+        { id: "p50-morning", title: "One-hour morning routine without distractions", type: "daily" as const, required: true, pillar: "Mental & Emotional", linkedFeature: "Habits" as const, sourceHint: "morning" },
+        { id: "p50-exercise", title: "Exercise for one hour", type: "daily" as const, required: true, pillar: "Physical", linkedFeature: "Fitness" as const, sourceHint: "workout" },
+        { id: "p50-diet", title: "Follow a healthy diet", type: "daily" as const, required: true, pillar: "Physical" },
+        { id: "p50-read", title: "Read 10 pages", type: "daily" as const, required: true, pillar: "Personal Growth", linkedFeature: "Habits" as const, sourceHint: "read" },
+        { id: "p50-skill", title: "Work on a skill for one hour", type: "daily" as const, required: true, pillar: "Personal Growth", linkedFeature: "Focus" as const, sourceHint: "skill" },
+        { id: "p50-track", title: "Track daily progress", type: "daily" as const, required: true, pillar: "Personal Growth", linkedFeature: "Journal" as const, sourceHint: "progress" }
+      ]
+    } : reset;
+    const normalized = normalizedProject.id === "demo-reset-completed" && (normalizedProject.photos?.length ?? 0) < 3 ? {
+      ...normalizedProject,
+      photos: [
+        { id: "wellness-photo-start", source: "https://images.unsplash.com/photo-1494597564530-871f2b93ac55?auto=format&fit=crop&w=900&q=80", date: normalizedProject.startDate, label: "Starting point" },
+        { id: "wellness-photo-mid", source: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=900&q=80", date: addIsoDays(normalizedProject.startDate, 14), label: "Halfway" },
+        { id: "wellness-photo-final", source: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=900&q=80", date: normalizedProject.endDate, label: "Final memory" }
+      ],
+      restores: normalizedProject.restores?.length ? normalizedProject.restores : [{ id: "wellness-restore-1", date: addIsoDays(normalizedProject.startDate, 12), window: `wellness-sleep:${addIsoDays(normalizedProject.startDate, 12)}`, note: "Restore used after a disrupted travel night." }],
+      changes: [
+        ...(normalizedProject.changes ?? []),
+        ...(normalizedProject.changes?.some(change => change.id === "wellness-restore-used") ? [] : [{ id: "wellness-restore-used", date: addIsoDays(normalizedProject.startDate, 12), day: 13, text: "Restore used for sleep after a disrupted travel night." }])
+      ],
+      share: { ...(normalizedProject.share ?? {}), publicTitle: normalizedProject.share?.publicTitle || "30 days of returning to myself", statement: normalizedProject.share?.statement || "Gentle structure still counts." }
+    } : normalizedProject;
+    return {
+      ...normalized,
+      publicName: normalized.publicName ?? normalized.name,
+      pillars: normalized.pillars?.length ? normalized.pillars : [lifePillars[0] ?? "Personal Growth"],
+      activities: normalized.activities ?? [],
+      photos: normalized.photos ?? [],
+      changes: normalized.changes ?? [],
+      restores: normalized.restores ?? [],
+      share: { ...{ publicTitle: normalized.publicName ?? normalized.name, showName: false, showDates: false, showStats: false, showMisses: false, showPhotos: false, showReflection: true, statement: "" }, ...(normalized.share ?? {}) }
+    };
+  });
+  return { ...base, ...raw, goals, board, lifePillars, lifeResets, spendingLimits: { ...base.spendingLimits, ...raw.spendingLimits, categories: { ...base.spendingLimits.categories, ...raw.spendingLimits?.categories } }, notificationSettings };
 }
 type Store = { data: LifeData; update: (fn: (data: LifeData) => LifeData) => void; ready: boolean; status: string; error: string; retry: () => void; account: boolean; back: () => void; undo: () => void; undoLabel: string; dismissUndo: () => void; offerUndo: (label: string, restore: (data: LifeData) => LifeData) => void };
 const Context = createContext<Store | null>(null);
@@ -78,6 +170,7 @@ export function LifeProvider({ children }: { children: ReactNode }) {
   const [account, setAccount] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const owner = useRef("");
+  const localProfile = useRef<DemoProfile>("demo");
   const revision = useRef(0);
   const dirty = useRef(false);
   const latest = useRef(data);
@@ -90,18 +183,19 @@ export function LifeProvider({ children }: { children: ReactNode }) {
     async function load() {
       try {
         if (configured() && ["/login", "/signup", "/forgot-password", "/reset-password", "/auth/callback"].includes(window.location.pathname)) return;
-        if (configured()) {
+        if (!isDemoMode) {
+          if (!configured()) throw new Error("Production mode requires Supabase configuration. Set APP_MODE=DEMO for local testing.");
           const db = createClient();
           const { data: auth, error: authError } = await db.auth.getUser();
           if (authError || !auth.user) { window.location.replace("/login"); return; }
           owner.current = auth.user.id;
           const { data: row, error: readError } = await db.from("life_workspaces").select("data,revision").eq("user_id", auth.user.id).maybeSingle();
           if (readError) throw readError;
-          const loaded = withDefaults({ ...(row?.data ?? {}), name: row?.data?.name ?? auth.user.user_metadata?.name ?? "" });
+          const loaded = withDefaults({ ...(row?.data ?? {}), name: row?.data?.name ?? auth.user.user_metadata?.name ?? auth.user.user_metadata?.full_name ?? "" });
           if (alive) { revision.current = row?.revision ?? 0; latest.current = loaded; setData(loaded); setAccount(true); setReady(true); setStatus("Saved to your account"); }
         } else {
-          const raw = localStorage.getItem("life-edit-preview-v2");
-          const loaded = raw ? withDefaults(JSON.parse(raw)) : emptyData();
+          localProfile.current = activeDemoProfile();
+          const loaded = withDefaults(loadDemoWorkspace(emptyData(), localProfile.current));
           if (alive) { latest.current = loaded; setData(loaded); setReady(true); setStatus("Saved on this device"); }
         }
       } catch (e) { if (alive) setError(e instanceof Error ? e.message : "Unable to load your workspace. Please retry."); }
@@ -114,7 +208,7 @@ export function LifeProvider({ children }: { children: ReactNode }) {
     document.documentElement.dataset.theme = data.theme.toLowerCase();
     if (!dirty.current) return;
     if (!account) {
-      try { localStorage.setItem("life-edit-preview-v2", JSON.stringify(data)); dirty.current = false; setStatus("Saved on this device"); setError(""); }
+      try { if (!isDemoMode) throw new Error("Local storage is disabled in production."); saveDemoWorkspace(data, localProfile.current); dirty.current = false; setStatus("Saved on this device"); setError(""); }
       catch { setError("Device storage is full or unavailable. Export your data before leaving."); }
       return;
     }
@@ -133,6 +227,17 @@ export function LifeProvider({ children }: { children: ReactNode }) {
     }, 800);
     return () => clearInterval(timer);
   }, [data, ready, account]);
+  useEffect(() => {
+    if (!isDemoMode) return;
+    const reset = (event: StorageEvent) => {
+      if (event.key === RESET_KEY && event.storageArea === localStorage) {
+        dirty.current = false;
+        window.location.replace("/onboarding");
+      }
+    };
+    window.addEventListener("storage", reset);
+    return () => window.removeEventListener("storage", reset);
+  }, []);
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => { if (dirty.current) { event.preventDefault(); event.returnValue = ""; } };
     window.addEventListener("beforeunload", warn);
