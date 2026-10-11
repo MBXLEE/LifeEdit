@@ -17,12 +17,14 @@ export const configured = () => Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && 
 export type Goal = { id: string; title: string; horizon: string; parent: string; pillars: string[]; progress: number; archived: boolean; due: string; notes: string };
 export type Habit = { id: string; name: string; direction: "build" | "quit"; dates: string[]; start: string; setbacks: { date: string; note: string }[] };
 export type Task = { id: string; title: string; date: string; time: string; minutes: number; pillar: string; done: boolean };
+export type ResetActivity = { id: string; name: string; pillar: string; notes: string; completedDates: string[] };
+export type LifeResetProgram = { id: string; title: string; description: string; duration: number; start: string; status: "Active" | "Paused" | "Completed"; activities: ResetActivity[] };
 export type Workout = { id: string; name: string; category: string; warmup: string; cooldown?: string; notes?: string; archived?: boolean; exercises: (Omit<Exercise, "category" | "seconds" | "notes"> & Partial<Pick<Exercise, "category" | "seconds" | "notes">>)[] };
 export type LifeData = ExtraData & RefinementData & {
   version: 2; name: string; theme: Theme; onboarded: boolean;
   assessment: Record<string, number>; areas: string[]; priorities: string[];
   identity: string; vision: string; mission: string; lifestyle: string;
-  goals: Goal[]; habits: Habit[]; tasks: Task[];
+  goals: Goal[]; habits: Habit[]; tasks: Task[]; lifeResets: LifeResetProgram[];
   templates: { id: string; name: string; pillar: string; prompts: string[] }[];
   journals: { id: string; title: string; template: string; pillar: string; body: string; date: string }[];
   currencies: { code: string; name: string; symbol: string }[]; currency: string;
@@ -34,7 +36,7 @@ export type LifeData = ExtraData & RefinementData & {
   notificationSettings: NotificationSettings;
 };
 export function emptyData(): LifeData {
-  return { ...extraDefaults(), ...refinementDefaults(), version: 2, name: "", theme: "Ocean", onboarded: false, assessment: {}, areas: [...pillars], priorities: [], identity: "", vision: "", mission: "", lifestyle: "", goals: [], habits: [], tasks: [],
+  return { ...extraDefaults(), ...refinementDefaults(), version: 2, name: "", theme: "Ocean", onboarded: false, assessment: {}, areas: [...pillars], priorities: [], identity: "", vision: "", mission: "", lifestyle: "", goals: [], habits: [], tasks: [], lifeResets: [],
     templates: pillars.map((pillar, i) => ({ id: `pillar-${i}`, name: pillar, pillar, prompts: [
       ["What financial decision did I make today?", "Did I stay within budget?"],
       ["How did I care for my body today?", "What health goal did I work towards?"],
