@@ -7,7 +7,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { usePathname, useRouter } from "next/navigation";
 import { Children, cloneElement, isValidElement, useEffect, useId, useRef, useState, type CSSProperties, type FormEvent, type ReactElement, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Archive, Bell, BookOpen, Brain, Briefcase, CalendarDays, Check, ChevronRight, CircleDollarSign, Clock, Download, Dumbbell, Flower2, GraduationCap, HeartHandshake, Home, ImagePlus, Lightbulb, LogOut, Menu, Pause, Pencil, Play, Plus, RotateCcw, Settings, Sparkles, Sprout, Target, Trash2, TrendingUp, Users, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Archive, BookOpen, Brain, Briefcase, CalendarDays, Check, ChevronRight, CircleDollarSign, Clock, Download, Dumbbell, Flower2, GraduationCap, HeartHandshake, Home, ImagePlus, Lightbulb, LogOut, Menu, Pause, Pencil, Play, Plus, RotateCcw, Settings, Sparkles, Sprout, Target, Trash2, TrendingUp, Users, X } from "lucide-react";
 import { useLife, pillars, themeNames, uid, today, configured, type Goal, type Habit, type JournalPhoto, type LifeData, type VisionImportance, type Workout } from "@/lib/life-store";
 import { clearAuthPersistence, createClient } from "@/lib/supabase/client";
 import { WorkspaceNavigation, ExploreModules, profileName } from "./workspace-navigation";
@@ -20,7 +20,8 @@ import { FocusWorkspace } from "./focus-workspace";
 import { BudgetWorkspace, FinanceWorkspace, PaydayCard } from "./finance-workspace";
 import { FitnessWorkspace } from "./fitness-workspace";
 import { CategoryManager, RecordManager, SocialWorkspace, SpiritualWorkspace } from "./record-manager";
-import { requestNotificationPermission } from "./notification-manager";
+import { NotificationPreferences } from "./notification-preferences";
+import { disconnectBackgroundNotifications } from "./notification-manager";
 import { LifeResetWorkspace, nextScheduledReset } from "./life-reset-workspace";
 
 const navigation = [
@@ -71,7 +72,7 @@ function Workspace() {
   const { data, ready, error, retry, account, undo, undoLabel, dismissUndo } = useLife();
   const path = usePathname(); const router = useRouter(); const [authError, setAuthError] = useState("");
   useEffect(() => { if (ready && account && !data.onboarded && path !== "/onboarding") router.replace("/onboarding"); }, [ready, account, data.onboarded, path, router]);
-  async function logout() { try { if (configured()) { const { error } = await createClient().auth.signOut(); if (error) throw error; } clearAuthPersistence(); window.location.assign("/login"); } catch { setAuthError("Could not log out. Please try again."); } }
+  async function logout() { try { if (configured()) { await disconnectBackgroundNotifications(); const { error } = await createClient().auth.signOut(); if (error) throw error; } clearAuthPersistence(); window.location.assign("/login"); } catch { setAuthError("Could not log out. Please try again."); } }
   if (!ready) return <main className="le-loading" aria-busy={!error}><p className="font-display text-4xl">The Life Edit</p><p>{error || "Opening your space..."}</p>{error && <Button onClick={retry}>Retry</Button>}</main>;
   if (path === "/life-reset") return <main className="lr-mode-root">{(error || authError) && <div role="alert" className="le-alert">{error || authError}<Button secondary onClick={retry}>Retry</Button></div>}<LifeResetWorkspace /></main>;
   return <WorkspaceNavigation path={path} logout={logout}>
@@ -160,6 +161,13 @@ function PillarColorEditor() {
 
 function LifeEdit() {
   const { data, update } = useLife(); const [tab, setTab] = useState("Pillars"); const [editing, setEditing] = useState<Goal | null>(null); const [archived, setArchived] = useState(false); const ratings = data.reviews.slice().sort((a,b)=>a.date.localeCompare(b.date)).at(-1)?.ratings ?? data.assessment;
+  const linkedGoals = useRef(data.goals);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search), id = params.get("goal");
+    if (params.get("view") === "goals") setTab("Goals & Vision");
+    const goal = linkedGoals.current.find(g => g.id === id);
+    if (goal) { setTab("Goals & Vision"); setArchived(goal.archived); setEditing(goal); }
+  }, []);
   const blank = (): Goal => ({ id: uid(), title: "", horizon: "Annual", parent: "", pillars: [], progress: 0, archived: false, due: "", notes: "", visionBoard: { enabled: false, images: [], phrase: "", importance: "Medium" } });
   const currentPillars = activePillars(data);
   return <><Heading section="The heart of your life edit" title="A life that feels like you."><Button onClick={() => setEditing(blank())}><Plus size={16} />Add Custom Goal</Button></Heading><section className="le-mobile-identity"><h2>{data.identity || "Your future self"}</h2><p>{data.vision || data.mission || "One intentional choice at a time."}</p><small>{data.goals.filter(g => !g.archived).length} active goals</small></section><Tabs items={["Pillars", "Goals & Vision", "Future Self"]} active={tab} onChange={setTab} />
@@ -432,6 +440,14 @@ function occurrencesForDay(tasks: PlannerTask[], day: string): PlannerOccurrence
 function Planner() {
   const { data, update } = useLife(); const [view, setView] = useState("Day"); const [date, setDate] = useState(today()); const [draft, setDraft] = useState<PlannerTask | null>(null); const [now, setNow] = useState(() => new Date()); const touchStart = useRef<number | null>(null);
   useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 60000); return () => window.clearInterval(timer); }, []);
+  const linkedTasks = useRef(data.tasks);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search), id = params.get("item"), day = params.get("date");
+    const item = linkedTasks.current.find(t => t.id === id);
+    if (day && /^\d{4}-\d{2}-\d{2}$/.test(day)) setDate(day);
+    else if (item) setDate(item.date);
+    if (item) setDraft(item);
+  }, []);
   const currentPillars = activePillars(data); const todayDate = today(); const dayOccurrences = occurrencesForDay(data.tasks, date);
   const todoTasks = data.tasks.filter(task => isTodoTask(task) && task.date === date).sort((a, b) => Number(a.done) - Number(b.done) || a.title.localeCompare(b.title));
   const anchor = new Date(`${date}T12:00:00`); const weekStartDate = weekStart(date); const start = new Date(`${view === "Month" ? `${date.slice(0, 8)}01` : view === "Week" ? weekStartDate : date}T12:00:00`);
@@ -516,21 +532,8 @@ function Insights() {
 function Preferences() {
   const { data, update } = useLife(); const [notice, setNotice] = useState("");
   const currentPillars = activePillars(data);
-  const notificationLabels = [["focus","Focus mode"],["planner","Planner reminders"],["overdue","Overdue tasks"],["habits","Habit check-ins"],["workouts","Workout plans"],["journal","Journal time"],["finance","Financial check-ins"],["spiritual","Spiritual routines"],["goals","Goal milestones"]] as const;
-  const notificationStatus = typeof window === "undefined" || !("Notification" in window) ? "unsupported" : Notification.permission;
-  async function enableNotifications() {
-    const permission = await requestNotificationPermission();
-    update(d => ({ ...d, notificationSettings: { ...d.notificationSettings, enabled: permission === "granted", permissionAsked: true } }));
-    setNotice(permission === "granted" ? "Notifications are enabled for this browser." : permission === "unsupported" ? "This browser does not support notifications." : "Notifications were not enabled. You can keep using reminders inside the app.");
-  }
-  function setCategory(key: keyof LifeData["notificationSettings"]["categories"], value: boolean) {
-    update(d => ({ ...d, notificationSettings: { ...d.notificationSettings, categories: { ...d.notificationSettings.categories, [key]: value } } }));
-  }
-  function setReminderTime(key: keyof LifeData["notificationSettings"]["reminderTimes"], value: string | number) {
-    update(d => ({ ...d, notificationSettings: { ...d.notificationSettings, reminderTimes: { ...d.notificationSettings.reminderTimes, [key]: value } } }));
-  }
   function exportData() { const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })); const a = document.createElement("a"); a.href = url; a.download = `the-life-edit-${today()}.json`; a.click(); URL.revokeObjectURL(url); setNotice("Your data export is ready."); }
-  return <><Heading section="Make yourself at home" title="Your space. Your way." /><div className="mb-5"><InstallAppButton /></div><ResetDemoData /><div className="le-grid-main"><div><h2>Theme Studio</h2><p className="le-muted mb-5">Choose the feeling of your everyday.</p><ThemePicker /><div className="mt-8"><h2>Your profile</h2><Field label="Display name"><input value={data.name} maxLength={80} onChange={e => update(d => ({ ...d, name: e.target.value }))} /></Field><Link href="/onboarding"><Pencil size={16} />Edit assessment and onboarding selections</Link></div></div><Card><h2>Your data, in your hands.</h2><p className="le-muted my-5">Download your goals, journals, habits, and plans as a personal archive.</p><Button secondary onClick={exportData}><Download size={16} />Export my data</Button>{notice && <p role="status" className="mt-4">{notice}</p>}</Card></div><div className="mt-8"><PillarColorEditor /></div><Card className="mt-8"><div className="le-row"><div><p className="le-eyebrow">Notifications</p><h2>Gentle reminders, only where useful.</h2><p className="le-muted mt-3">The Life Edit can remind you about focus sessions, plans, and chosen wellbeing routines on this device.</p></div><Button onClick={enableNotifications} disabled={notificationStatus === "denied"}><Bell size={16} />{data.notificationSettings.enabled ? "Refresh permission" : "Enable notifications"}</Button></div>{notificationStatus === "denied" && <p className="le-error">Notifications are blocked in this browser. Change the site permission in your browser settings to enable them.</p>}<label className="le-check-row"><input type="checkbox" checked={data.notificationSettings.enabled} disabled={notificationStatus !== "granted"} onChange={e => update(d => ({ ...d, notificationSettings: { ...d.notificationSettings, enabled: e.target.checked } }))} />Use notifications on this device</label><div className="le-grid-three mt-5">{notificationLabels.map(([key,label]) => <label className="le-check-row" key={key}><input type="checkbox" checked={data.notificationSettings.categories[key]} onChange={e => setCategory(key, e.target.checked)} />{label}</label>)}</div><div className="le-grid-four le-reminder-grid mt-5"><Field label="Planner lead time (minutes)"><input type="number" min="0" max="1440" value={data.notificationSettings.reminderTimes.plannerLeadMinutes} onChange={e => setReminderTime("plannerLeadMinutes", Number(e.target.value))} /></Field><Field label="Habit reminder"><input type="time" value={data.notificationSettings.reminderTimes.habitTime} onChange={e => setReminderTime("habitTime", e.target.value)} /></Field><Field label="Journal reminder"><input type="time" value={data.notificationSettings.reminderTimes.journalTime} onChange={e => setReminderTime("journalTime", e.target.value)} /></Field><Field label="Spiritual reminder"><input type="time" value={data.notificationSettings.reminderTimes.spiritualTime} onChange={e => setReminderTime("spiritualTime", e.target.value)} /></Field><Field label="Finance reminder"><input type="time" value={data.notificationSettings.reminderTimes.financeTime} onChange={e => setReminderTime("financeTime", e.target.value)} /></Field></div><p className="le-muted">Browser reminders use your device time zone. Reliable delivery while the browser is fully closed depends on platform push support and a backend push service.</p></Card><div className="space-y-6 mt-8"><RecordManager collection="templates" title="Journal templates" singular="journal template" archive={false} fields={[{key:"name",label:"Journal name",required:true},{key:"pillar",label:"Life pillar",type:"select",options:currentPillars},{key:"prompts",label:"Prompts (one per line)",type:"lines",required:true}]} /><CategoryManager categoryKey="areas" title="Focus areas"/><CategoryManager categoryKey="focusTypes" title="Focus session types"/></div></>;
+  return <><Heading section="Make yourself at home" title="Your space. Your way." /><div className="mb-5"><InstallAppButton /></div><ResetDemoData /><div className="le-grid-main"><div><h2>Theme Studio</h2><p className="le-muted mb-5">Choose the feeling of your everyday.</p><ThemePicker /><div className="mt-8"><h2>Your profile</h2><Field label="Display name"><input value={data.name} maxLength={80} onChange={e => update(d => ({ ...d, name: e.target.value }))} /></Field><Link href="/onboarding"><Pencil size={16} />Edit assessment and onboarding selections</Link></div></div><Card><h2>Your data, in your hands.</h2><p className="le-muted my-5">Download your goals, journals, habits, and plans as a personal archive.</p><Button secondary onClick={exportData}><Download size={16} />Export my data</Button>{notice && <p role="status" className="mt-4">{notice}</p>}</Card></div><div className="mt-8"><PillarColorEditor /></div><NotificationPreferences /><div className="space-y-6 mt-8"><RecordManager collection="templates" title="Journal templates" singular="journal template" archive={false} fields={[{key:"name",label:"Journal name",required:true},{key:"pillar",label:"Life pillar",type:"select",options:currentPillars},{key:"prompts",label:"Prompts (one per line)",type:"lines",required:true}]} /><CategoryManager categoryKey="areas" title="Focus areas"/><CategoryManager categoryKey="focusTypes" title="Focus session types"/></div></>;
 }
 
 

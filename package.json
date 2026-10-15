@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test:focused": "node tests/auth-modal-notifications.cjs"
+    "test:focused": "node tests/auth-modal-notifications.cjs",
+    "test:notifications": "node tests/notifications.cjs && node tests/notification-worker.cjs && node tests/notification-server.cjs"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.1.0",
@@ -20,12 +21,14 @@
     "next": "^15.0.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tailwind-merge": "^2.5.4"
+    "tailwind-merge": "^2.5.4",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.1",
+    "@types/web-push": "^3.6.4",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.15.0",
     "eslint-config-next": "^15.0.3",

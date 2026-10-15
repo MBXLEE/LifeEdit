@@ -1,5 +1,5 @@
 export type Exercise = { id: string; name: string; category: string; sets: number; reps: number; weight: number; rest: number; seconds: number; notes: string };
-export type FocusPlan = { id: string; name: string; focusMinutes: number; breakMinutes: number; sessions: number; completed: number; phase: "focus" | "break" | "finished"; running: boolean; endsAt: number | null; remaining: number };
+export type FocusPlan = { id: string; name: string; focusMinutes: number; breakMinutes: number; sessions: number; completed: number; phase: "focus" | "break" | "finished"; running: boolean; endsAt: number | null; remaining: number; lastTransitionAt?: number; lastPhase?: "focus" | "break" };
 export type ExtraData = {
   savingsGoals: { id: string; title: string; target: number; saved: number; currency: string; due: string; archived: boolean }[];
   allocation: { enabled: boolean; needs: number; wants: number; savings: number };
@@ -37,6 +37,7 @@ export function advanceFocus(plan: FocusPlan, now: number) {
   const logs: { id: string; name: string; seconds: number; date: string }[] = [];
   while (next.running && next.endsAt !== null && now >= next.endsAt) {
     const boundary = next.endsAt;
+    next.lastTransitionAt = boundary; next.lastPhase = next.phase as "focus" | "break";
     if (next.phase === "focus") {
       next.completed++;
       logs.push({ id: `${next.id}-${next.completed}`, name: next.name, seconds: next.focusMinutes * 60, date: localDate(boundary) });

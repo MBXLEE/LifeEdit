@@ -1223,3 +1223,12 @@
   .lr-commitment-row { grid-template-columns:minmax(0,1fr); }
   .lr-uat-panel { align-items:flex-start;flex-direction:column;padding:22px; }
 }
+.le-notification-categories { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.le-notification-option { display:flex; align-items:flex-start; gap:12px; padding:15px; border:1px solid hsl(var(--border)); border-radius:14px; cursor:pointer; }
+.le-notification-option input { margin-top:4px; flex-shrink:0; }
+.le-notification-option strong,.le-notification-option small { display:block; }
+.le-notification-option small { margin-top:4px; color:var(--le-muted); font-size:12px; line-height:1.6; }
+.le-button.le-destructive { background:#a94e54; border-color:#a94e54; color:#fff; }
+.le-button.le-destructive:hover { background:#913e45; }
+@media(max-width:640px) { .le-notification-categories { grid-template-columns:1fr; } .le-notification-preferences>.le-row { align-items:flex-start; flex-direction:column; } }
+@media(max-width:640px) { .le-notification-preferences .le-reminder-grid { grid-template-columns:1fr; } }

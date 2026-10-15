@@ -67,6 +67,7 @@ npm run typecheck
 npm run lint
 npm run build
 npm run test:focused
+npm run test:notifications
 ```
 
 The existing Playwright-style scripts in `tests/` can be run against a local dev server by setting `LIFE_EDIT_URL` when needed, for example:
@@ -75,3 +76,5 @@ The existing Playwright-style scripts in `tests/` can be run against a local dev
 $env:LIFE_EDIT_URL="http://localhost:3000"
 node tests/progress-controls.cjs
 ```
+
+Reset deletion and reminder delivery, including production Web Push setup, are documented in [docs/notifications.md](docs/notifications.md). Run `node tests/reset-notifications-ui.cjs` against a running demo server to check desktop and mobile reminder flows.

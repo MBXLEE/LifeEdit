@@ -255,7 +255,8 @@ export function LifeProvider({ children }: { children: ReactNode }) {
       }
     }
     const cleared = (["identity", "vision", "mission", "lifestyle"] as const).filter(key => before[key] && !next[key]);
-    if (removed.length || cleared.length) {
+    if (removed.some(item => item.key === "lifeResets")) { undoAction.current = null; setUndoLabel(""); }
+    else if (removed.length || cleared.length) {
       undoAction.current = current => {
         const restored = { ...current };
         for (const { key, rows } of removed) {

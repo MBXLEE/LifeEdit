@@ -1,123 +1,131 @@
-import type { FocusPlan } from "@/lib/life-domain";
-import type { LifeData, Task } from "@/lib/life-store";
+import type { FocusPlan } from "./life-domain";
+import type { LifeData, Task } from "./life-store";
+import { commitmentComplete, dayOfReset, dueOnDay } from "./reset-progress";
+import { addDateDays, dateInZone, wallTime } from "./notification-time";
+import { nextReviewDate } from "./refinements";
 
-export type NotificationCategory = "focus" | "planner" | "overdue" | "habits" | "workouts" | "journal" | "finance" | "spiritual" | "goals";
-
+export type NotificationCategory = "focus" | "planner" | "overdue" | "resets" | "habits" | "journal" | "finance" | "goals" | "reviews";
 export type NotificationSettings = {
   enabled: boolean;
   categories: Record<NotificationCategory, boolean>;
-  reminderTimes: {
-    plannerLeadMinutes: number;
-    habitTime: string;
-    journalTime: string;
-    financeTime: string;
-    spiritualTime: string;
-  };
+  reminderTimes: { plannerLeadMinutes: number; plannerSummaryTime: string; resetTime: string; habitTime: string; journalTime: string; financeTime: string; reviewTime: string };
   permissionAsked: boolean;
 };
-
-export type ScheduledNotification = {
-  id: string;
-  category: NotificationCategory;
-  title: string;
-  body: string;
-  at: number;
-  url: string;
-};
-
+export type ScheduledNotification = { id: string; category: NotificationCategory; title: string; body: string; at: number; url: string; expiresAt?: number };
 export const defaultNotificationSettings = (): NotificationSettings => ({
   enabled: false,
-  categories: {
-    focus: true,
-    planner: true,
-    overdue: false,
-    habits: false,
-    workouts: false,
-    journal: false,
-    finance: false,
-    spiritual: false,
-    goals: false
-  },
-  reminderTimes: {
-    plannerLeadMinutes: 15,
-    habitTime: "19:00",
-    journalTime: "20:30",
-    financeTime: "17:30",
-    spiritualTime: "07:30"
-  },
+  categories: { focus: true, planner: true, overdue: false, resets: true, habits: false, journal: false, finance: false, goals: false, reviews: false },
+  reminderTimes: { plannerLeadMinutes: 15, plannerSummaryTime: "19:00", resetTime: "19:00", habitTime: "19:30", journalTime: "20:30", financeTime: "09:00", reviewTime: "18:00" },
   permissionAsked: false
 });
-
-function combineDateTime(date: string, time = "09:00") {
-  const parsed = new Date(`${date}T${time || "09:00"}:00`);
-  return Number.isNaN(parsed.getTime()) ? null : parsed.getTime();
+export function notificationSettings(raw?: Partial<NotificationSettings>): NotificationSettings {
+  const base = defaultNotificationSettings();
+  return { ...base, ...raw, categories: { ...base.categories, ...raw?.categories }, reminderTimes: { ...base.reminderTimes, ...raw?.reminderTimes } };
 }
-
-function dailyTime(date: Date, time: string) {
-  const [hour, minute] = time.split(":").map(Number);
-  const next = new Date(date);
-  next.setHours(hour || 0, minute || 0, 0, 0);
-  if (next.getTime() <= date.getTime()) next.setDate(next.getDate() + 1);
-  return next.getTime();
+export function taskOccursOn(task: Task, day: string) {
+  if (!task.recurrence || task.recurrence === "none") return task.date === day;
+  if (day < task.date || (task.recurrenceEnd && day > task.recurrenceEnd)) return false;
+  const weekday = new Date(`${day}T12:00:00Z`).getUTCDay();
+  return task.recurrence === "daily" || (task.recurrence === "weekdays" ? weekday > 0 && weekday < 6 : weekday === new Date(`${task.date}T12:00:00Z`).getUTCDay());
 }
-
+export function taskDoneOn(task: Task, day: string) {
+  return task.recurrence && task.recurrence !== "none" ? Boolean(task.completedDates?.includes(day)) : task.done;
+}
 export function focusNotifications(plan: FocusPlan | null, now = Date.now()): ScheduledNotification[] {
-  if (!plan?.running || !plan.endsAt || plan.phase === "finished" || plan.endsAt <= now) return [];
-  const isFinalFocus = plan.phase === "focus" && plan.completed + 1 >= plan.sessions;
-  const nextReadyAt = plan.phase === "break" ? plan.endsAt : plan.endsAt + plan.breakMinutes * 60 * 1000;
-  const rows: ScheduledNotification[] = [{
-    id: `focus:${plan.id}:${plan.phase}:${plan.completed}:${plan.endsAt}`,
-    category: "focus",
-    title: plan.phase === "break" ? "Break completed" : isFinalFocus ? "All planned sessions completed" : "Focus session completed",
-    body: plan.phase === "break" ? "Your next focus session is ready." : isFinalFocus ? "Beautiful work. Your focus plan is complete." : "Take a gentle break before the next round.",
-    at: plan.endsAt,
-    url: "/focus"
-  }];
-  if (plan.phase === "focus" && !isFinalFocus && plan.breakMinutes > 0) {
-    rows.push({ id: `focus:${plan.id}:break-start:${plan.completed}:${plan.endsAt}`, category: "focus", title: "Break started", body: "Step away for a moment and reset.", at: plan.endsAt + 1000, url: "/focus" });
-    rows.push({ id: `focus:${plan.id}:next-ready:${plan.completed}:${nextReadyAt}`, category: "focus", title: "Next focus session ready", body: "Your next planned session is ready when you are.", at: nextReadyAt, url: "/focus" });
-  }
-  return rows;
-}
-
-export function plannerNotifications(tasks: Task[], settings: NotificationSettings, now = Date.now()): ScheduledNotification[] {
-  const lead = Math.max(0, settings.reminderTimes.plannerLeadMinutes) * 60 * 1000;
-  return tasks.flatMap(task => {
-    if (task.done || task.kind === "todo") return [];
-    const due = combineDateTime(task.date, task.time);
-    if (!due) return [];
-    const rows: ScheduledNotification[] = [];
-    const upcoming = due - lead;
-    if (upcoming > now) rows.push({ id: `planner:${task.id}:upcoming:${due}:${lead}`, category: "planner", title: "Upcoming time block", body: `${task.title} starts at ${task.time}.`, at: upcoming, url: `/planner?item=${task.id}` });
-    if (due > now) rows.push({ id: `planner:${task.id}:due:${due}`, category: "planner", title: "Task due now", body: task.title, at: due, url: `/planner?item=${task.id}` });
-    if (settings.categories.overdue && due + 30 * 60 * 1000 > now && due < now) rows.push({ id: `planner:${task.id}:overdue:${due}`, category: "overdue", title: "Overdue task", body: `${task.title} is still waiting for you.`, at: now + 5000, url: `/planner?item=${task.id}` });
-    return rows;
-  });
-}
-
-export function wellbeingNotifications(data: LifeData, settings: NotificationSettings, now = Date.now()): ScheduledNotification[] {
-  const today = new Date(now);
+  if (!plan) return [];
   const rows: ScheduledNotification[] = [];
-  if (settings.categories.habits && data.habits.some(h => h.direction === "build")) rows.push({ id: `habits:daily:${today.toDateString()}`, category: "habits", title: "Habit check-in", body: "Take a moment to mark today’s small promises.", at: dailyTime(today, settings.reminderTimes.habitTime), url: "/habits" });
-  if (settings.categories.workouts && data.workouts.some(w => !w.archived)) rows.push({ id: `workouts:daily:${today.toDateString()}`, category: "workouts", title: "Workout plan", body: "Your movement plan is ready when you are.", at: dailyTime(today, settings.reminderTimes.habitTime), url: "/fitness" });
-  if (settings.categories.journal) rows.push({ id: `journal:daily:${today.toDateString()}`, category: "journal", title: "Reflection time", body: "A few quiet lines can help you close the day.", at: dailyTime(today, settings.reminderTimes.journalTime), url: "/journal" });
-  if (settings.categories.finance) rows.push({ id: `finance:daily:${today.toDateString()}`, category: "finance", title: "Financial check-in", body: "Review today’s spending while it is still fresh.", at: dailyTime(today, settings.reminderTimes.financeTime), url: "/finance" });
-  if (settings.categories.spiritual) rows.push({ id: `spiritual:daily:${today.toDateString()}`, category: "spiritual", title: "Spiritual routine", body: "Make space for prayer, study, or reflection.", at: dailyTime(today, settings.reminderTimes.spiritualTime), url: "/spiritual" });
-  if (settings.categories.goals) {
-    data.goals.filter(goal => !goal.archived && goal.due).forEach(goal => {
-      const at = combineDateTime(goal.due, "09:00");
-      if (at && at > now) rows.push({ id: `goals:${goal.id}:${goal.due}`, category: "goals", title: "Goal milestone", body: goal.title, at, url: "/life-edit" });
-    });
+  const append = (at: number, phase: "focus" | "break", completed: number) => {
+    const final = phase === "focus" && completed >= plan.sessions;
+    rows.push({ id: `focus:${plan.id}:${phase}:${completed}:${at}`, category: "focus", title: phase === "break" ? "Break complete" : final ? "Focus plan complete" : "Focus session complete", body: phase === "break" ? `Ready for your next ${plan.name} session?` : final ? `You finished your ${plan.name} plan. Take a moment to rest.` : `${plan.name} complete. Time for a break.`, at, expiresAt: at + 90_000, url: `/focus?session=${encodeURIComponent(plan.id)}` });
+  };
+  if (plan.lastTransitionAt && plan.lastPhase) append(plan.lastTransitionAt, plan.lastPhase, plan.completed);
+  if (!plan.running || !plan.endsAt || plan.phase === "finished") return rows;
+  let at = plan.endsAt, phase = plan.phase, completed = plan.completed;
+  for (let i = 0; i < 64 && completed < plan.sessions; i++) {
+    if (phase === "focus") completed++;
+    append(at, phase, completed);
+    if (completed >= plan.sessions) break;
+    phase = phase === "focus" && plan.breakMinutes > 0 ? "break" : "focus";
+    at += (phase === "focus" ? plan.focusMinutes : plan.breakMinutes) * 60_000;
+  }
+  return rows.filter(r => r.at >= now-90_000);
+}
+export function plannerNotifications(tasks: Task[], settings: NotificationSettings, now = Date.now(), timeZone?: string): ScheduledNotification[] {
+  const rows: ScheduledNotification[] = [], today = dateInZone(now, timeZone);
+  const lead = Math.max(0, Math.min(1440, Number(settings.reminderTimes.plannerLeadMinutes) || 0)) * 60_000;
+  for (let offset = -1; offset <= 7; offset++) {
+    const day = addDateDays(today, offset);
+    const unfinished = [...new Map(tasks.map(t => [t.id, t])).values()].filter(t => taskOccursOn(t, day) && !taskDoneOn(t, day));
+    if (settings.categories.planner) for (const task of unfinished) {
+      if (task.kind === "todo" || !task.time) continue;
+      const due = wallTime(day, task.time, timeZone);
+      rows.push({ id: `planner:${task.id}:${day}`, category: "planner", title: lead ? "Coming up" : "Time for your plan", body: lead ? `Your “${task.title}” starts in ${Math.round(lead / 60_000)} minutes.` : `Your “${task.title}” is scheduled for now.`, at: due-lead, expiresAt: due-lead+90_000, url: `/planner?item=${encodeURIComponent(task.id)}&date=${day}` });
+    }
+    const at = wallTime(day, settings.reminderTimes.plannerSummaryTime, timeZone);
+    const remaining = unfinished.filter(t => t.kind === "todo" || !t.time || wallTime(day,t.time,timeZone) < at);
+    if (settings.categories.overdue && remaining.length) rows.push({ id: `planner:summary:${day}`, category: "overdue", title: "A little room to finish", body: `You still have ${remaining.length} ${remaining.length === 1 ? "thing" : "things"} planned for today. Choose what still matters.`, at, url: `/planner?date=${day}` });
+  }
+  return rows.filter(r => Number.isFinite(r.at));
+}
+export function resetNotifications(data: LifeData, settings: NotificationSettings, now = Date.now(), timeZone?: string): ScheduledNotification[] {
+  if (!settings.categories.resets) return [];
+  const rows: ScheduledNotification[] = [], today = dateInZone(now, timeZone);
+  for (const reset of data.lifeResets ?? []) {
+    const url = `/life-reset?reset=${encodeURIComponent(reset.id)}`;
+    if (reset.status === "completed") {
+      if (reset.completedAt) rows.push({ id: `reset:${reset.id}:completed:${reset.completedAt}`, category: "resets", title: "Your Reset is complete", body: `You finished ${reset.name}. Make space to reflect on this season.`, at: Date.parse(reset.completedAt), expiresAt: Date.parse(reset.completedAt)+90_000, url });
+      continue;
+    }
+    if (reset.status !== "active" && reset.status !== "scheduled") continue;
+    for (let offset = -1; offset <= 1; offset++) {
+      const day = addDateDays(today,offset);
+      if (day < reset.startDate || day > reset.endDate) continue;
+      const due = reset.commitments.filter(c => dueOnDay(reset,c,day));
+      const remaining = due.filter(c => !commitmentComplete(data,reset,c,day));
+      const number = dayOfReset(reset,day), halfway = number === Math.ceil(reset.duration/2);
+      if (!remaining.length && !halfway) continue;
+      rows.push({ id: `reset:${reset.id}:${reset.startDate}:${day}`, category: "resets", title: halfway ? `Halfway through ${reset.name}` : `${reset.name} check-in`, body: `Day ${number} of ${reset.duration}. ${remaining.length ? `${due.length-remaining.length} of ${due.length} commitments complete. There’s room for one small step.` : "Today’s commitments are complete. Notice how far you’ve come."}`, at: wallTime(day,settings.reminderTimes.resetTime,timeZone), url });
+    }
   }
   return rows;
 }
-
-export function buildNotificationSchedule(data: LifeData, now = Date.now()) {
-  const settings = data.notificationSettings ?? defaultNotificationSettings();
+export function wellbeingNotifications(data: LifeData, settings: NotificationSettings, now = Date.now(), timeZone?: string): ScheduledNotification[] {
+  const today = dateInZone(now,timeZone), rows: ScheduledNotification[] = [];
+  for (let offset = -1; offset <= 1; offset++) {
+    const day = addDateDays(today,offset);
+    const habits = (data.habits ?? []).filter(h => h.direction === "build" && h.start <= day && !h.dates.includes(day));
+    if (settings.categories.habits && habits.length) rows.push({ id: `habits:${day}`, category: "habits", title: "Your habit check-in", body: habits.length === 1 ? `Make a little space for “${habits[0].name}”.` : `${habits.length} habits are waiting for a check-in today.`, at: wallTime(day,settings.reminderTimes.habitTime,timeZone), url: "/habits" });
+    if (settings.categories.journal && !(data.journals ?? []).some(j => j.date === day)) rows.push({ id: `journal:${day}`, category: "journal", title: "A moment to reflect", body: "Your chosen time for a few quiet lines.", at: wallTime(day,settings.reminderTimes.journalTime,timeZone), url: "/journal" });
+    if (settings.categories.finance) for (const t of data.transactions ?? []) {
+      if (!t.dueDate || t.dueDate !== day || t.paid || t.status === "Paid") continue;
+      rows.push({ id: `finance:${t.id}:${day}`, category: "finance", title: "Planned payment today", body: `“${t.title}” is due today.`, at: wallTime(day,settings.reminderTimes.financeTime,timeZone), url: `/finance?item=${encodeURIComponent(t.id)}` });
+    }
+  }
+  if (settings.categories.goals) for (const g of data.goals ?? []) {
+    if (!g.due || g.archived || g.progress >= 100) continue;
+    rows.push({ id: `goal:${g.id}:${g.due}`, category: "goals", title: "A goal you planned for today", body: `“${g.title}” reaches its planned date today.`, at: wallTime(g.due,"09:00",timeZone), url: `/life-edit?goal=${encodeURIComponent(g.id)}` });
+  }
+  if (settings.categories.reviews && data.reviewSchedule?.enabled) {
+    const last = (data.reviews ?? []).map(r => r.date).sort().at(-1) ?? data.reviewSchedule.start;
+    const due = last ? nextReviewDate(last,data.reviewSchedule.frequency) : "";
+    if (due) rows.push({ id: `review:${due}`, category: "reviews", title: "Space for your life review", body: `Your ${data.reviewSchedule.frequency.toLowerCase()} review is planned for today.`, at: wallTime(due,settings.reminderTimes.reviewTime,timeZone), url: "/insights?review=new" });
+  }
+  return rows;
+}
+export function buildNotificationSchedule(data: LifeData, now = Date.now(), timeZone?: string) {
+  const settings = notificationSettings(data.notificationSettings);
   if (!settings.enabled) return [];
-  return [
-    ...(settings.categories.focus ? focusNotifications(data.focusPlan, now) : []),
-    ...(settings.categories.planner || settings.categories.overdue ? plannerNotifications(data.tasks, settings, now) : []),
-    ...wellbeingNotifications(data, settings, now)
-  ].filter(item => item.at > now).sort((a, b) => a.at - b.at);
+  const rows = [...(settings.categories.focus ? focusNotifications(data.focusPlan,now) : []), ...plannerNotifications(data.tasks ?? [],settings,now,timeZone), ...resetNotifications(data,settings,now,timeZone), ...wellbeingNotifications(data,settings,now,timeZone)];
+  const unique = [...new Map(rows.filter(r => Number.isFinite(r.at) && (r.expiresAt ?? r.at+90_000) > now && r.at < now+8*86400_000).map(r => [r.id,{ ...r, expiresAt: r.expiresAt ?? r.at+90_000 }])).values()];
+  const buckets = new Map<string,ScheduledNotification[]>();
+  for (const item of unique) {
+    const key = item.category === "focus" ? item.id : `${item.category}:${Math.floor(item.at/60_000)}`;
+    buckets.set(key,[...(buckets.get(key) ?? []),item]);
+  }
+  return [...buckets.entries()].map(([key,items]) => {
+    if (items.length === 1) return items[0];
+    const first = items[0];
+    const url = first.category === "planner" ? `/planner?date=${dateInZone(first.at,timeZone)}` : first.category === "resets" ? "/life-reset?view=resets" : first.category === "goals" ? "/life-edit?view=goals" : "/finance?view=transactions";
+    return { ...first, id:`group:${key}`, title:first.category === "planner" ? `${items.length} plans coming up` : first.category === "resets" ? "Your Reset check-in" : `${items.length} reminders for today`, body:items.slice(0,3).map(n => n.body).join(" ") + (items.length > 3 ? ` And ${items.length-3} more.` : ""), url };
+  }).sort((a,b) => a.at-b.at);
 }

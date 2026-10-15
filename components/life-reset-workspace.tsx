@@ -3,14 +3,15 @@
 import type { Route } from "next";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, CalendarDays, Check, Flame, ImagePlus, Pencil, Plus, RotateCcw, ShieldCheck, Sparkles, Trash2, X } from "lucide-react";
 import { MediaImage, MultiImageUpload, resolveMediaUrl } from "@/components/workspace-media";
-import { useLife, uid, today, type LifeData, type LifeResetProgram, type ResetAccountability, type ResetActivity, type ResetCommitment, type ResetCommitmentType, type ResetIntensity, type ResetLinkedFeature, type ResetStatus } from "@/lib/life-store";
+import { useLife, uid, today, type LifeData, type LifeResetProgram, type ResetAccountability, type ResetCommitment, type ResetCommitmentType, type ResetIntensity, type ResetLinkedFeature, type ResetStatus } from "@/lib/life-store";
 import { isDemoMode } from "@/lib/app-mode";
 import { DEMO_KEY, selectDemoProfile } from "@/lib/demo-storage";
 
-const dayMs = 86_400_000;
+import { parseDate, addDays, daysBetween, formatDate, allowanceFor, endDate, statusFor, dayOfReset, progressFor, weekStart, weekEnd, windowKey, commitmentSummary, dueOnDay, resetDateRange, allActivities, activityCountInWindow, commitmentComplete } from "@/lib/reset-progress";
+import { Modal as ConfirmModal } from "./workspace-ui";
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 type ResetTemplate = {
@@ -95,104 +96,6 @@ function Modal({ title, close, children }: { title: string; close: () => void; c
   return <div className="lr-modal-shell" role="dialog" aria-modal="true" aria-label={title}><button type="button" className="lr-modal-scrim" aria-label="Close" onClick={close} /><section className="lr-modal"><div className="le-modal-header"><h2>{title}</h2><IconButton title="Close dialog" onClick={close}><X size={20} /></IconButton></div>{children}</section></div>;
 }
 
-function isoDate(date: Date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`; }
-function parseDate(value: string) { return new Date(`${value}T12:00:00`); }
-function addDays(value: string, amount: number) { const date = parseDate(value); date.setDate(date.getDate() + amount); return isoDate(date); }
-function daysBetween(start: string, end: string) { return Math.floor((parseDate(end).getTime() - parseDate(start).getTime()) / dayMs); }
-function inclusiveDays(start: string, end: string) { return Math.max(0, daysBetween(start, end) + 1); }
-function formatDate(value: string) { return parseDate(value).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }); }
-function allowanceFor(duration: number) { return Math.max(1, Math.round(duration / 21)); }
-function endDate(start: string, duration: number) { return addDays(start, Math.max(1, duration) - 1); }
-function statusFor(reset: LifeResetProgram, date = today()): ResetStatus {
-  if (["completed", "failed", "abandoned", "draft"].includes(reset.status)) return reset.status;
-  if (date < reset.startDate) return "scheduled";
-  if (date > reset.endDate) return reset.status === "scheduled" ? "active" : reset.status;
-  return "active";
-}
-function dayOfReset(reset: LifeResetProgram, date = today()) {
-  if (date < reset.startDate) return 0;
-  return Math.min(reset.duration, Math.max(1, inclusiveDays(reset.startDate, date)));
-}
-function progressFor(reset: LifeResetProgram, date = today()) {
-  if (reset.status === "completed") return 100;
-  if (date < reset.startDate) return 0;
-  return Math.min(100, Math.round(dayOfReset(reset, date) / reset.duration * 100));
-}
-function weekStart(value: string) { const d = parseDate(value); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return isoDate(d); }
-function weekEnd(value: string) { return addDays(weekStart(value), 6); }
-function windowKey(commitment: ResetCommitment, start: string, end = start) { return `${commitment.id}:${start}:${end}`; }
-function commitmentSummary(commitment: ResetCommitment) {
-  if (commitment.type === "daily") return "Every day";
-  if (commitment.type === "specific-days") return `On ${commitment.scheduleDays?.map(day => dayNames[day]).join(", ") || "selected days"}`;
-  if (commitment.type === "weekly-quantity") return `${commitment.targetPerWeek ?? 1}x per week`;
-  if (commitment.type === "weekly-recurring") return `Weekly${commitment.scheduleDays?.length ? ` on ${commitment.scheduleDays.map(day => dayNames[day]).join(", ")}` : ""}`;
-  if (commitment.type === "avoidance") return "Avoidance commitment";
-  if (commitment.type === "limit") return `Limit ${commitment.limitAmount ?? ""} ${commitment.limitUnit ?? ""}`.trim();
-  return commitment.everyNDays ? `Every ${commitment.everyNDays} days` : "Progress photo";
-}
-function dueOnDay(reset: LifeResetProgram, commitment: ResetCommitment, date: string) {
-  const day = parseDate(date).getDay();
-  const resetDay = dayOfReset(reset, date);
-  if (date < reset.startDate || date > reset.endDate) return false;
-  if (commitment.type === "daily" || commitment.type === "avoidance" || commitment.type === "limit") return true;
-  if (commitment.type === "specific-days") return Boolean(commitment.scheduleDays?.includes(day));
-  if (commitment.type === "weekly-recurring") return Boolean(commitment.scheduleDays?.includes(day) ?? day === 0);
-  if (commitment.type === "weekly-quantity") return true;
-  if (commitment.type === "photo") return resetDay === 1 || resetDay === reset.duration || Boolean(commitment.everyNDays && resetDay % commitment.everyNDays === 0);
-  return false;
-}
-function resetDateRange(reset: LifeResetProgram, through = today()) {
-  const end = through < reset.endDate ? through : reset.endDate;
-  const count = inclusiveDays(reset.startDate, end);
-  return Array.from({ length: count }, (_, index) => addDays(reset.startDate, index));
-}
-function syncedActivities(data: LifeData, reset: LifeResetProgram, commitment: ResetCommitment): ResetActivity[] {
-  const start = reset.startDate, end = reset.endDate;
-  const inRange = (date: string) => date >= start && date <= end;
-  if (commitment.linkedFeature === "Fitness") {
-    return data.workoutLogs.filter(log => inRange(log.date)).map(log => ({ id: `fitness-${log.id}`, commitmentId: commitment.id, date: log.date, source: "fitness", externalId: log.id, note: log.name }));
-  }
-  if (commitment.linkedFeature === "Habits") {
-    const hint = (commitment.sourceHint || commitment.title).toLowerCase();
-    return data.habits.filter(habit => habit.direction === "build" && (habit.name.toLowerCase().includes(hint) || hint.includes(habit.name.toLowerCase()))).flatMap(habit => habit.dates.filter(inRange).map(date => ({ id: `habit-${habit.id}-${date}`, commitmentId: commitment.id, date, source: "habit" as const, externalId: habit.id, note: habit.name })));
-  }
-  if (commitment.linkedFeature === "Journal") {
-    return data.journals.filter(journal => inRange(journal.date)).map(journal => ({ id: `journal-${journal.id}`, commitmentId: commitment.id, date: journal.date, source: "journal", externalId: journal.id, note: journal.title }));
-  }
-  if (commitment.linkedFeature === "Spiritual") {
-    return [...data.prayers.filter(row => inRange(row.date)).map(row => ({ id: `prayer-${row.id}`, commitmentId: commitment.id, date: row.date, source: "spiritual" as const, externalId: row.id, note: row.title })), ...data.studyPlans.filter(row => inRange(row.date)).map(row => ({ id: `study-${row.id}`, commitmentId: commitment.id, date: row.date, source: "spiritual" as const, externalId: row.id, note: row.title }))];
-  }
-  if (commitment.linkedFeature === "Planner") {
-    return data.tasks.filter(task => task.done && inRange(task.date) && task.title.toLowerCase().includes(commitment.title.split(" ")[0].toLowerCase())).map(task => ({ id: `planner-${task.id}`, commitmentId: commitment.id, date: task.date, source: "planner", externalId: task.id, note: task.title }));
-  }
-  if (commitment.linkedFeature === "Focus") {
-    return data.focus.filter(row => inRange(row.date)).map(row => ({ id: `focus-${row.id}`, commitmentId: commitment.id, date: row.date, source: "focus", externalId: row.id, note: row.name, value: row.seconds }));
-  }
-  return [];
-}
-function allActivities(data: LifeData, reset: LifeResetProgram, commitment: ResetCommitment) {
-  const manual = reset.activities.filter(activity => activity.commitmentId === commitment.id);
-  const synced = syncedActivities(data, reset, commitment);
-  const unique = new Map<string, ResetActivity>();
-  [...manual, ...synced].forEach(activity => unique.set(`${activity.source}:${activity.externalId ?? activity.id}:${activity.date}`, activity));
-  return [...unique.values()];
-}
-function activityCountInWindow(data: LifeData, reset: LifeResetProgram, commitment: ResetCommitment, start: string, end = start) {
-  if (commitment.type === "photo") return reset.photos.filter(photo => photo.date >= start && photo.date <= end).length;
-  const dates = new Set(allActivities(data, reset, commitment).filter(activity => activity.date >= start && activity.date <= end).map(activity => activity.date));
-  return dates.size;
-}
-function commitmentComplete(data: LifeData, reset: LifeResetProgram, commitment: ResetCommitment, date: string) {
-  if (commitment.type === "weekly-quantity") {
-    const start = weekStart(date), end = weekEnd(date);
-    return activityCountInWindow(data, reset, commitment, start < reset.startDate ? reset.startDate : start, end > reset.endDate ? reset.endDate : end) >= (commitment.targetPerWeek ?? 1);
-  }
-  if (commitment.type === "weekly-recurring") {
-    const start = weekStart(date), end = weekEnd(date);
-    return activityCountInWindow(data, reset, commitment, start < reset.startDate ? reset.startDate : start, end > reset.endDate ? reset.endDate : end) >= 1;
-  }
-  return activityCountInWindow(data, reset, commitment, date) > 0;
-}
 function missedWindows(data: LifeData, reset: LifeResetProgram, asOf = today()) {
   const yesterday = addDays(asOf, -1);
   if (yesterday < reset.startDate) return [];
@@ -262,6 +165,7 @@ export function LifeResetWorkspace() {
   const [creator, setCreator] = useState<LifeResetProgram | null>(null);
   const [templateFilter, setTemplateFilter] = useState("All");
   const [editingCommitment, setEditingCommitment] = useState<{ reset: LifeResetProgram; commitment: ResetCommitment } | null>(null);
+  const [deletingReset, setDeletingReset] = useState<LifeResetProgram | null>(null);
   const [shareReset, setShareReset] = useState<LifeResetProgram | null>(null);
   const [celebration, setCelebration] = useState("");
   const selected = data.lifeResets.find(reset => reset.id === selectedId) ?? active[0] ?? scheduled[0] ?? completed[0] ?? null;
@@ -281,6 +185,18 @@ export function LifeResetWorkspace() {
     setView("journey");
   }
 
+  const linkedResets = useRef(data.lifeResets);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search), id = params.get("reset");
+    if (params.get("view") === "resets") setView("resets");
+    if (id && linkedResets.current.some(reset => reset.id === id)) { setSelectedId(id); setView("resets"); }
+  }, []);
+  function deleteReset() {
+    if (!deletingReset) return;
+    update(d => ({ ...d, lifeResets: d.lifeResets.filter(reset => reset.id !== deletingReset.id) }));
+    setDeletingReset(null); setEditingCommitment(null); setShareReset(null); setCreator(null); setSelectedId(null); setView("resets");
+    window.history.replaceState(null, "", "/life-reset");
+  }
   function saveReset(reset: LifeResetProgram) {
     update(d => ({ ...d, lifeResets: [...d.lifeResets.filter(item => item.id !== reset.id), { ...reset, updatedAt: new Date().toISOString() }] }));
   }
@@ -413,10 +329,11 @@ export function LifeResetWorkspace() {
       {view === "today" && !primary && <DiscoverExperience filteredTemplates={filteredTemplates} templateFilter={templateFilter} setTemplateFilter={setTemplateFilter} openCreator={openCreator} />}
       {view === "journey" && selected && <JourneyExperience data={data} reset={selected} updatePhotos={updatePhotos} completeReset={completeReset} openShare={setShareReset} />}
       {view === "journey" && !selected && <EmptyMode title="Start a Reset to build a journey." action="Discover programmes" onAction={() => setView("discover")} />}
-      {view === "resets" && <ResetManagement data={data} active={active} scheduled={scheduled} completed={completed} selected={selected} selectReset={id => setSelectedId(id)} openJourney={id => { setSelectedId(id); setView("journey"); }} openCreator={openCreator} editCommitment={(reset, commitment) => setEditingCommitment({ reset, commitment })} />}
+      {view === "resets" && <ResetManagement data={data} active={active} scheduled={scheduled} completed={completed} selected={selected} selectReset={id => setSelectedId(id)} openJourney={id => { setSelectedId(id); setView("journey"); }} openCreator={openCreator} editCommitment={(reset, commitment) => setEditingCommitment({ reset, commitment })} deleteReset={setDeletingReset} />}
       {view === "discover" && <DiscoverExperience filteredTemplates={filteredTemplates} templateFilter={templateFilter} setTemplateFilter={setTemplateFilter} openCreator={openCreator} />}
     </main>
 
+    {deletingReset && <ConfirmModal title="Delete this Reset?" close={() => setDeletingReset(null)}><p className="my-5">This will permanently delete this Reset and its progress. This action cannot be undone.</p><p className="le-muted mb-5">{deletingReset.name} and its future reminders will be removed. Activity already recorded in other areas stays in your history.</p><div className="le-inline"><Button secondary onClick={() => setDeletingReset(null)}>Cancel</Button><Button className="le-destructive" onClick={deleteReset}><Trash2 size={16} />Delete Reset</Button></div></ConfirmModal>}
     {creator && <Modal title={creator.templateId ? `Personalise ${creator.name}` : "Create Your Own Reset"} close={() => setCreator(null)}>
       <form onSubmit={saveCreator} className="lr-creator">
         <div className="lr-creator-intro"><p className="le-eyebrow">Personalise programme</p><h2>Choose the shape of this season.</h2><p>Start with a clear why, then adjust the commitments and accountability rules so the Reset fits your life.</p></div>
@@ -542,12 +459,12 @@ function JourneyExperience({ data, reset, updatePhotos, completeReset, openShare
   </section>;
 }
 
-function ResetManagement({ data, active, scheduled, completed, selected, selectReset, openJourney, openCreator, editCommitment }: { data: LifeData; active: LifeResetProgram[]; scheduled: LifeResetProgram[]; completed: LifeResetProgram[]; selected: LifeResetProgram | null; selectReset: (id: string) => void; openJourney: (id: string) => void; openCreator: (template: ResetTemplate | null) => void; editCommitment: (reset: LifeResetProgram, commitment: ResetCommitment) => void }) {
+function ResetManagement({ data, active, scheduled, completed, selected, selectReset, openJourney, openCreator, editCommitment, deleteReset }: { data: LifeData; active: LifeResetProgram[]; scheduled: LifeResetProgram[]; completed: LifeResetProgram[]; selected: LifeResetProgram | null; selectReset: (id: string) => void; openJourney: (id: string) => void; openCreator: (template: ResetTemplate | null) => void; editCommitment: (reset: LifeResetProgram, commitment: ResetCommitment) => void; deleteReset: (reset: LifeResetProgram) => void }) {
   const shown = selected ?? active[0] ?? scheduled[0] ?? completed[0] ?? null;
   return <section className="lr-resets-view">
     <div className="lr-section-heading"><div><p className="le-eyebrow">Resets</p><h1>Your Reset seasons</h1></div><Button onClick={() => openCreator(null)}><Plus size={16} />New Reset</Button></div>
-    <div className="lr-reset-switcher">{[...active, ...scheduled, ...completed].map(reset => <button key={reset.id} aria-pressed={shown?.id === reset.id} onClick={() => selectReset(reset.id)}><strong>{reset.name}</strong><span>{statusFor(reset)} · Day {dayOfReset(reset)} of {reset.duration}</span></button>)}</div>
-    {shown ? <section className="lr-programme-details"><div><p className="le-eyebrow">Programme details</p><h2>{shown.name}</h2><p>{shown.why || shown.outcome}</p><div className="lr-detail-stats"><span>{shown.accountability}</span><span>{resetStats(data, shown).editsRemaining} adjustments available</span><span>{shown.restoreAllowance - shown.restores.length} restores remaining</span></div></div><div className="lr-rule-list">{shown.commitments.map(commitment => <div key={commitment.id}><span>{commitmentSummary(commitment)}</span><strong>{commitment.title}</strong><small>{commitment.pillar}{commitment.linkedFeature ? ` · syncs with ${commitment.linkedFeature}` : ""}</small><IconButton title={`Adjust ${commitment.title}`} onClick={() => editCommitment(shown, commitment)}><Pencil size={16} /></IconButton></div>)}</div></section> : <EmptyMode title="No Reset programmes yet." action="Discover programmes" onAction={() => openCreator(null)} />}
+    <div className="lr-reset-switcher">{[...active, ...scheduled, ...completed, ...data.lifeResets.filter(reset => ["draft", "failed", "abandoned"].includes(reset.status))].map(reset => <button key={reset.id} aria-pressed={shown?.id === reset.id} onClick={() => selectReset(reset.id)}><strong>{reset.name}</strong><span>{statusFor(reset)} · Day {dayOfReset(reset)} of {reset.duration}</span></button>)}</div>
+    {shown ? <section className="lr-programme-details"><div><p className="le-eyebrow">Programme details</p><div className="le-row"><h2>{shown.name}</h2><Button secondary onClick={() => deleteReset(shown)}><Trash2 size={16} />Delete Reset</Button></div><p>{shown.why || shown.outcome}</p><div className="lr-detail-stats"><span>{shown.accountability}</span><span>{resetStats(data, shown).editsRemaining} adjustments available</span><span>{shown.restoreAllowance - shown.restores.length} restores remaining</span></div></div><div className="lr-rule-list">{shown.commitments.map(commitment => <div key={commitment.id}><span>{commitmentSummary(commitment)}</span><strong>{commitment.title}</strong><small>{commitment.pillar}{commitment.linkedFeature ? ` · syncs with ${commitment.linkedFeature}` : ""}</small><IconButton title={`Adjust ${commitment.title}`} onClick={() => editCommitment(shown, commitment)}><Pencil size={16} /></IconButton></div>)}</div></section> : <EmptyMode title="No Reset programmes yet." action="Discover programmes" onAction={() => openCreator(null)} />}
     {scheduled.length > 0 && <section className="lr-quiet-list"><p className="le-eyebrow">Upcoming</p>{scheduled.map(reset => <button key={reset.id} onClick={() => selectReset(reset.id)}><CalendarDays size={16} /><span>{reset.name} starts {formatDate(reset.startDate)}</span></button>)}</section>}
     {completed.length > 0 && <section className="lr-completed-seasons"><div><p className="le-eyebrow">Completed seasons</p><h2>Review the finish and create a keepsake.</h2></div>{completed.map(reset => {
       const stats = resetStats(data, reset);

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BudgetBreakdown } from "./budget-breakdown";
 import { AlertTriangle, CalendarRange, Check, Plus, RotateCcw, XCircle } from "lucide-react";
 import { budgetGuidanceSummary, financialTotals, budgetAllocation, classifications, financeCalendarSummary, financeEventDate, financeEventLabel, isPlannedFinanceTransaction, isSavings, type Classification } from "@/lib/refinements";
@@ -120,6 +120,13 @@ function PaymentToggle({ transaction, togglePaid }: { transaction: Transaction; 
 }
 export function FinanceWorkspace({ budgetModule = false }: { budgetModule?: boolean }) {
   const { data, update } = useLife(); const [tab,setTab]=useState(budgetModule?"Home":"Overview"); const [month,setMonth]=useState(today().slice(0,7)); const [selectedWeekStart,setSelectedWeekStart]=useState(""); const [draft,setDraft]=useState<Transaction|null>(null); const [budget,setBudget]=useState<Budget|null>(null); const [currencyOpen,setCurrencyOpen]=useState(false); const [error,setError]=useState("");
+  const linkedTransactions = useRef(data.transactions);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search), id = params.get("item");
+    if (params.get("view") === "transactions") setTab("Transactions");
+    const item = linkedTransactions.current.find(t => t.id === id);
+    if (item) { setDraft(item); setTab("Transactions"); }
+  }, []);
   const currency = data.currencies.find(c => c.code === data.currency) ?? { code: data.currency, symbol: data.currency };
   const money = (v:number) => `${currency.symbol} ${v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`;
   const activeDate=month===today().slice(0,7)?today():`${month}-01`;

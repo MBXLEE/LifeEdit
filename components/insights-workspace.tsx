@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, CalendarDays, CheckCircle2, CircleAlert, Plus, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 import { useLife,pillars,today,uid } from "@/lib/life-store";
 import { budgetGuidanceSummary, journalRatingStats, nextReviewDate,reviewDue,type Review } from "@/lib/refinements";
@@ -11,6 +11,8 @@ export function InsightsWorkspace() {
   const currentPillars=data.lifePillars?.length?data.lifePillars:pillars;const days=Number(period);const start=(()=>{const d=new Date(`${date}T12:00:00`);d.setDate(d.getDate()-days+1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;})();
   const recent=(value:string)=>value>=start&&value<=date;const due=reviewDue(data,date);const next=nextReviewDate(latest?.date??data.reviewSchedule.start,data.reviewSchedule.frequency);const finance=budgetGuidanceSummary(data,date,data.currency);const evidence=pillarEvidence(data,date);const selectedPillar=currentPillars.includes(trendPillar)?trendPillar:currentPillars[0]??"Personal Growth";
   const add=()=>setDraft({id:uid(),date,ratings:Object.fromEntries(currentPillars.map(p=>[p,current[p]??5])),notes:""});
+  const linkedReview = useRef(add);
+  useEffect(() => { if (new URLSearchParams(window.location.search).get("review") === "new") linkedReview.current(); }, []);
   const summaries=currentPillars.map(p=>{
     const stats=journalRatingStats(data,p,date);const goals=data.goals.filter(g=>!g.archived&&g.pillars.includes(p));const doneTasks=data.tasks.filter(t=>t.pillar===p&&t.done&&recent(t.date)).length;const journals=data.journals.filter(j=>j.pillar===p&&recent(j.date)).length;const score=evidence.find(row=>row.pillar===p)?.score??0;
     let label="Not enough recent data";let tone:"up"|"down"|"steady"|"quiet"="quiet";

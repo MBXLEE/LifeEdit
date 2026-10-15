@@ -1,8 +1,9 @@
 export const workerSource = String.raw`
 const SHELL = 'lifeedit-shell-' + MODE + '-' + VERSION;
 const ASSETS = 'lifeedit-assets-v2';
-const routes = new Set(['/dashboard','/planner','/focus','/life-edit','/journal','/insights','/finance','/budget','/fitness','/habits','/quit-habits','/social','/spiritual','/settings','/onboarding','/login']);
+const routes = new Set(['/life-reset','/dashboard','/planner','/focus','/life-edit','/journal','/insights','/finance','/budget','/fitness','/habits','/quit-habits','/social','/spiritual','/settings','/onboarding','/login']);
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(caches.open(SHELL).then(cache => cache.addAll(['/offline.html','/icon-192.png','/icon-512.png','/apple-touch-icon.png'])));
 });
 self.addEventListener('activate', event => {
