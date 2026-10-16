@@ -52,7 +52,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   const id = useId();
   return <div className="le-field"><label htmlFor={id}>{label}</label>{Children.map(children, child => isValidElement(child) && typeof child.type === "string" && ["input", "textarea", "select"].includes(child.type) ? cloneElement(child as ReactElement<{ id: string }>, { id }) : child)}</div>;
 }
-function Empty({ title, action, onClick }: { title: string; action?: string; onClick?: () => void }) { return <div className="le-empty"><div className="le-empty-mark"><Plus size={22} /></div><h3>{title}</h3>{action && <Button onClick={onClick}><Plus size={16} />{action}</Button>}</div>; }
+function Empty({ title, action, onClick }: { title: string; action?: string; onClick?: () => void }) { return <div className="le-empty"><div className="le-empty-mark" aria-hidden="true"><Sparkles size={20} /></div><h3>{title}</h3>{action && <Button onClick={onClick}><Plus size={16} />{action}</Button>}</div>; }
 function Tabs({ items, active, onChange }: { items: string[]; active: string; onChange: (v: string) => void }) { return <div className="le-tabs" role="tablist">{items.map(item => <button type="button" role="tab" aria-selected={active === item} key={item} onClick={() => onChange(item)}>{item}</button>)}</div>; }
 function Modal({ title, close, children }: { title: string; close: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -95,10 +95,10 @@ function Dashboard() {
     {data.onboarded && reviewDue(data,today()) && <div className="le-welcome"><h2>Would you like to update your Life Balance Assessment?</h2><Link href="/insights">Review your life balance <ArrowRight size={16}/></Link></div>}
     {!data.onboarded && <div className="le-welcome"><div><h2>Make room for the life you want.</h2><p>Begin with your life assessment.</p></div><Button onClick={() => router.push("/onboarding")}>Begin your life edit <ArrowRight size={16} /></Button></div>}
     {(activeReset || upcomingReset) && <div className="lr-dashboard-reminder"><div><p className="le-eyebrow">{activeReset ? "Life Reset in progress" : "Upcoming Life Reset"}</p><h2>{activeReset ? `Continue ${activeReset.name} · Day ${Math.max(1, Math.ceil((Date.parse(`${date}T12:00:00`) - Date.parse(`${activeReset.startDate}T12:00:00`)) / 86400000) + 1)} of ${activeReset.duration}` : `${upcomingReset?.name} starts in ${Math.max(0, Math.ceil((Date.parse(`${upcomingReset?.startDate}T12:00:00`) - Date.parse(`${date}T12:00:00`)) / 86400000))} days.`}</h2></div><Link href={"/life-reset" as Route}>Open Life Reset <ArrowRight size={16}/></Link></div>}
-    <div className="le-grid-main le-dashboard-overview"><Card><p className="le-eyebrow">Today&apos;s progress</p><div className="le-score-layout"><Ring value={score}><strong>{score}</strong><small>of 100</small></Ring><div><p className="le-mobile-score">{score}<small>%</small></p><h2>{signals.length ? "Every small step counts." : "A fresh beginning."}</h2><p className="le-muted">{signals.filter(Boolean).length} of {signals.length} daily commitments complete</p><div className="le-inline mt-5"><span className="le-chip">{Math.floor(focus / 60)} min focused</span><span className="le-chip">{data.journals.filter(j => j.date === date).length} reflections</span></div></div></div><div className="le-daily-stats"><div><strong>{tasks.filter(t => t.done).length}/{tasks.length}</strong><small>Tasks</small></div><div><strong>{habits.filter(h => h.dates.includes(date)).length}/{habits.length}</strong><small>Habits</small></div><div><strong>{Math.floor(focus / 60)}m</strong><small>Focus</small></div></div></Card><div className="le-affirmation"><p className="le-eyebrow">Today&apos;s affirmation</p><blockquote>I can build a meaningful life, one intentional choice at a time.</blockquote></div></div>
-    <DailyBudgetWidget />
+    <div className="le-grid-main le-dashboard-overview"><Card><p className="le-eyebrow">Today&apos;s progress</p><div className="le-score-layout"><Ring value={score}><strong>{score}</strong><small>of 100</small></Ring><div><p className="le-mobile-score">{score}<small>%</small></p><h2>{signals.length ? "Every small step counts." : "A fresh beginning."}</h2><p className="le-muted">{signals.filter(Boolean).length} of {signals.length} daily commitments complete</p></div></div><div className="le-daily-stats"><div><strong>{tasks.filter(t => t.done).length}/{tasks.length}</strong><small>Tasks</small></div><div><strong>{habits.filter(h => h.dates.includes(date)).length}/{habits.length}</strong><small>Habits</small></div><div><strong>{Math.floor(focus / 60)}m</strong><small>Focus</small></div></div></Card><div className="le-affirmation"><p className="le-eyebrow">Today&apos;s affirmation</p><blockquote>I can build a meaningful life, one intentional choice at a time.</blockquote></div></div>
     <div className="le-grid-two mt-6"><Card><div className="le-row"><h2>Today&apos;s priorities</h2><Link href="/planner">View planner <ArrowRight size={14} /></Link></div>{!tasks.length ? <Empty title="Your day is a blank page." action="Add a priority" onClick={() => router.push("/planner")} /> : tasks.map(task => <label className="le-check-row" key={task.id}><input type="checkbox" checked={task.done} onChange={() => update(d => ({ ...d, tasks: d.tasks.map(t => t.id === task.id ? { ...t, done: !t.done } : t) }))} /><span className={task.done ? "line-through le-muted" : ""}>{task.title}</span><small>{task.time}</small></label>)}</Card><Card><div className="le-row"><h2>Small daily promises</h2><Link href="/habits">Your habits <ArrowRight size={14} /></Link></div>{!habits.length ? <Empty title="No habits added yet." action="Add a habit" onClick={() => router.push("/habits")} /> : habits.map(habit => <label className="le-check-row" key={habit.id}><input type="checkbox" checked={habit.dates.includes(date)} onChange={() => update(d => ({ ...d, habits: d.habits.map(h => h.id === habit.id ? { ...h, dates: h.dates.includes(date) ? h.dates.filter(v => v !== date) : [...h.dates, date] } : h) }))} />{habit.name}</label>)}</Card></div>
-    <div className="le-grid-three mt-6">{[["Life Edit", "Become who you imagine.", "/life-edit"], ["Budget", "Know what today can hold.", "/budget"], ["Finance", "Make your money intentional.", "/finance"]].map(([title, desc, href]) => <Link className="le-feature-link" href={href as Route} key={title}><p className="le-eyebrow">{title}</p><h2>{desc}</h2><ArrowRight size={20} /></Link>)}</div><ExploreModules /></>;
+    <details className="le-dashboard-details"><summary><span><strong>Money today</strong><small>Payday and daily budget guidance</small></span><ChevronRight size={18}/></summary><DailyBudgetWidget /></details>
+    <details className="le-dashboard-details"><summary><span><strong>Explore your workspace</strong><small>Goals, money, wellbeing and more</small></span><ChevronRight size={18}/></summary><div className="le-grid-three mt-6">{[["Life Edit", "Become who you imagine.", "/life-edit"], ["Budget", "Know what today can hold.", "/budget"], ["Finance", "Make your money intentional.", "/finance"]].map(([title, desc, href]) => <Link className="le-feature-link" href={href as Route} key={title}><p className="le-eyebrow">{title}</p><h2>{desc}</h2><ArrowRight size={20} /></Link>)}</div><ExploreModules /></details></>;
 }
 
 function DailyBudgetWidget() {
@@ -415,6 +415,20 @@ const weekStart = (value: string) => { const d = new Date(`${value}T12:00:00`); 
 const clockToMinutes = (value: string) => { const [h, m] = value.split(":").map(Number); return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : 9 * 60; };
 const clockLabel = (minutes: number) => { const dayOffset = Math.floor(minutes / 1440); const wrapped = ((minutes % 1440) + 1440) % 1440; return `${String(Math.floor(wrapped / 60)).padStart(2, "0")}:${String(wrapped % 60).padStart(2, "0")}${dayOffset > 0 ? " +1d" : ""}`; };
 const durationLabel = (minutes: number) => `${Math.floor(minutes / 60) ? `${Math.floor(minutes / 60)}h ` : ""}${minutes % 60 ? `${minutes % 60}m` : Math.floor(minutes / 60) ? "" : "0m"}`.trim();
+const activityHeight = (minutes: number) => Math.min(220, Math.max(76, minutes * 1.25));
+const gapHeight = (minutes: number) => Math.min(180, Math.max(18, minutes * .55));
+function DurationFields({ minutes, error, clearError }: { minutes: number; error: string; clearError: () => void }) {
+  const [hours, setHours] = useState(() => minutes >= 60 ? String(Math.floor(minutes / 60)) : "");
+  const [remainingMinutes, setRemainingMinutes] = useState(() => minutes % 60 ? String(minutes % 60) : "");
+  return <fieldset className="le-duration-fields" aria-describedby={error ? "duration-error" : undefined}>
+    <legend>Duration</legend>
+    <div className="le-grid-two">
+      <Field label="Duration hours"><input name="duration-hours" type="number" inputMode="numeric" min="0" max="24" step="1" placeholder="Hours" aria-invalid={Boolean(error)} value={hours} onChange={e => { setHours(e.target.value); clearError(); }} /></Field>
+      <Field label="Duration minutes"><input name="duration-minutes" type="number" inputMode="numeric" min="0" max="59" step="1" placeholder="Minutes" aria-invalid={Boolean(error)} value={remainingMinutes} onChange={e => { setRemainingMinutes(e.target.value); clearError(); }} /></Field>
+    </div>
+    {error && <p id="duration-error" className="le-field-error" role="alert">{error}</p>}
+  </fieldset>;
+}
 function occursOn(task: PlannerTask, day: string) {
   if (isTodoTask(task)) return false;
   const recurrence = task.recurrence ?? "none";
@@ -438,7 +452,7 @@ function occurrencesForDay(tasks: PlannerTask[], day: string): PlannerOccurrence
 }
 
 function Planner() {
-  const { data, update } = useLife(); const [view, setView] = useState("Day"); const [date, setDate] = useState(today()); const [draft, setDraft] = useState<PlannerTask | null>(null); const [now, setNow] = useState(() => new Date()); const touchStart = useRef<number | null>(null);
+  const { data, update } = useLife(); const [view, setView] = useState("Day"); const [date, setDate] = useState(today()); const [draft, setDraft] = useState<PlannerTask | null>(null); const [durationError, setDurationError] = useState(""); const [now, setNow] = useState(() => new Date()); const touchStart = useRef<number | null>(null);
   useEffect(() => { const timer = window.setInterval(() => setNow(new Date()), 60000); return () => window.clearInterval(timer); }, []);
   const linkedTasks = useRef(data.tasks);
   useEffect(() => {
@@ -457,9 +471,10 @@ function Planner() {
   const selectedLabel = anchor.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
   const selectedMonth = anchor.toLocaleDateString(undefined, { month: "long", year: "numeric" });
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const add = () => setDraft({ id: uid(), title: "", date, time: "09:00", minutes: 30, pillar: currentPillars[0], done: false, kind: "time-block", recurrence: "none" });
+  useEffect(() => { setDurationError(""); }, [draft?.id, draft?.kind]);
+  const add = () => setDraft({ id: uid(), title: "", date, time: "09:00", minutes: 0, pillar: currentPillars[0], done: false, kind: "time-block", recurrence: "none" });
   const addTodo = () => setDraft({ id: uid(), title: "", date, time: "", minutes: 0, pillar: currentPillars[0], done: false, kind: "todo", recurrence: "none" });
-  const scheduleTodo = (task: PlannerTask) => setDraft({ ...task, kind: "time-block", date, time: "09:00", minutes: 30, recurrence: task.recurrence ?? "none" });
+  const scheduleTodo = (task: PlannerTask) => setDraft({ ...task, kind: "time-block", date, time: "09:00", minutes: 0, recurrence: task.recurrence ?? "none" });
   const shiftDay = (amount: number) => setDate(addPlannerDays(date, amount));
   function toggleDone(task: PlannerTask, day = date) {
     update(d => ({ ...d, tasks: d.tasks.map(t => {
@@ -476,37 +491,48 @@ function Planner() {
   function saveTimeBlock(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!draft) return;
-    const cleanDraft: PlannerTask = { ...draft, title: draft.title.trim(), time: isTodoTask(draft) ? "" : draft.time, minutes: isTodoTask(draft) ? 0 : draft.minutes, recurrence: isTodoTask(draft) ? "none" : (draft.recurrence ?? "none"), recurrenceEnd: draft.recurrence === "none" ? "" : draft.recurrenceEnd };
-    const minutesInput = event.currentTarget.elements.namedItem("duration-minutes");
-    if (!isTodoTask(cleanDraft) && cleanDraft.minutes <= 0) {
-      if (minutesInput instanceof HTMLInputElement) { minutesInput.setCustomValidity("Duration must be at least 1 minute."); event.currentTarget.reportValidity(); minutesInput.setCustomValidity(""); }
-      return;
-    }
+    const form = new FormData(event.currentTarget);
+    const hours = Number(String(form.get("duration-hours") ?? "").trim() || 0);
+    const minutes = Number(String(form.get("duration-minutes") ?? "").trim() || 0);
+    const duration = hours * 60 + minutes;
+    if (!isTodoTask(draft) && duration <= 0) { setDurationError("Please enter a duration."); return; }
+    const cleanDraft: PlannerTask = { ...draft, title: draft.title.trim(), time: isTodoTask(draft) ? "" : draft.time, minutes: isTodoTask(draft) ? 0 : duration, recurrence: isTodoTask(draft) ? "none" : (draft.recurrence ?? "none"), recurrenceEnd: draft.recurrence === "none" ? "" : draft.recurrenceEnd };
     update(d => ({ ...d, tasks: [...d.tasks.filter(t => t.id !== cleanDraft.id), cleanDraft] }));
     setDate(cleanDraft.date || date); setDraft(null);
   }
   const timeline: ReactNode[] = [];
-  let cursor = Math.min(8 * 60, dayOccurrences[0]?.start ?? 8 * 60);
+  let cursor = Math.min(8 * 60, dayOccurrences[0]?.start ?? 8 * 60, date === todayDate ? nowMinutes : 8 * 60);
   let nowPlaced = false;
-  dayOccurrences.forEach(item => {
-    if (date === todayDate && !nowPlaced && nowMinutes <= item.start) { timeline.push(<div key="now-before" className="le-now-line"><span>{clockLabel(nowMinutes)}</span><strong>Now</strong></div>); nowPlaced = true; }
-    if (item.start - cursor >= 20) timeline.push(<div key={`gap-${item.task.id}`} className="le-time-gap"><span>{clockLabel(cursor)}</span><em>{durationLabel(item.start - cursor)} open</em></div>);
+  const nowLine = (key: string, position: number) => <div key={key} className="le-now-line le-now-overlay" style={{ top: `${position}%` }}><span>{clockLabel(nowMinutes)}</span><i /><strong>Now</strong></div>;
+  const addGap = (startMinute: number, endMinute: number, key: string) => {
+    const gap = endMinute - startMinute;
+    if (gap <= 0) return;
+    const containsNow = date === todayDate && !nowPlaced && nowMinutes >= startMinute && nowMinutes < endMinute;
+    timeline.push(<div key={key} className="le-time-gap" style={{ height: `${gapHeight(gap)}px` }}><span>{clockLabel(startMinute)}</span><em>{gap >= 15 ? `${durationLabel(gap)} open` : ""}</em>{containsNow && nowLine(`${key}-now`, (nowMinutes - startMinute) / gap * 100)}</div>);
+    if (containsNow) nowPlaced = true;
+  };
+  dayOccurrences.forEach((item, index) => {
+    addGap(cursor, item.start, `gap-${item.task.id}`);
     const done = occurrenceDone(item.task, item.date);
-    const height = Math.min(220, Math.max(76, item.task.minutes * 1.55));
-    timeline.push(<div key={`${item.task.id}-${item.date}`} className={`le-timeline-row ${item.overlap ? "has-overlap" : ""}`}>
+    const height = activityHeight(item.task.minutes);
+    const containsNow = date === todayDate && !nowPlaced && nowMinutes >= item.start && nowMinutes < item.end;
+    const connectsPrevious = index > 0 && dayOccurrences[index - 1].end === item.start;
+    const connectsNext = index < dayOccurrences.length - 1 && item.end === dayOccurrences[index + 1].start;
+    timeline.push(<div key={`${item.task.id}-${item.date}`} className={`le-timeline-row ${item.task.minutes <= 20 ? "is-short" : ""} ${item.overlap ? "has-overlap" : ""} ${connectsPrevious ? "connects-previous" : ""} ${connectsNext ? "connects-next" : ""}`} style={{ height: `${height}px` }}>
       <div className="le-time-stamp"><span>{clockLabel(item.start)}</span><small>{clockLabel(item.end)}</small></div>
-      <button draggable onDragStart={e => e.dataTransfer.setData("text/plain", item.task.id)} type="button" className={`le-time-block le-timeline-block ${done ? "le-completed" : ""}`} style={{ ...taskColor(data, item.task), minHeight: `${height}px` }} onClick={() => setDraft(item.task)}>
+      <button draggable onDragStart={e => e.dataTransfer.setData("text/plain", item.task.id)} type="button" className={`le-time-block le-timeline-block ${done ? "le-completed" : ""}`} style={taskColor(data, item.task)} onClick={() => setDraft(item.task)}>
         <span>{durationLabel(item.task.minutes)}{item.task.recurrence && item.task.recurrence !== "none" ? ` · ${item.task.recurrence}` : ""}</span>
         <strong>{item.task.title}</strong>
         <small>{item.task.notes || item.task.pillar}</small>
         {item.overlap && <em>Overlap</em>}
       </button>
       <button type="button" className="le-scratch-toggle" aria-label={`${done ? "Reopen" : "Complete"} ${item.task.title}`} aria-pressed={done} onClick={() => toggleDone(item.task, item.date)}>{done ? <Check size={18} /> : null}</button>
+      {containsNow && nowLine(`now-${item.task.id}`, (nowMinutes - item.start) / Math.max(1, item.end - item.start) * 100)}
     </div>);
-    if (date === todayDate && !nowPlaced && nowMinutes > item.start && nowMinutes < item.end) { timeline.push(<div key="now-inside" className="le-now-line is-inside"><span>{clockLabel(nowMinutes)}</span><strong>Now</strong></div>); nowPlaced = true; }
+    if (containsNow) nowPlaced = true;
     cursor = Math.max(cursor, item.end);
   });
-  if (date === todayDate && !nowPlaced) timeline.push(<div key="now-after" className="le-now-line"><span>{clockLabel(nowMinutes)}</span><strong>Now</strong></div>);
+  if (date === todayDate && !nowPlaced && nowMinutes >= cursor) addGap(cursor, nowMinutes + 1, "gap-after-final");
   const unfinishedPast = date < todayDate ? dayOccurrences.filter(item => !occurrenceDone(item.task, item.date) && (!item.task.recurrence || item.task.recurrence === "none")) : [];
   return <><Heading section="Make time for what matters" title="A day with intention."><div className="le-inline"><Button secondary onClick={addTodo}><Plus size={16} />Add to-do</Button><Button onClick={add}><Plus size={16} />Add time block</Button></div></Heading>
     <div className="le-planner-top"><div><p className="le-eyebrow">{selectedMonth}</p><h2>{selectedLabel}</h2></div><div className="le-inline"><Tabs items={["Day", "Week", "Month"]} active={view} onChange={setView} /><IconButton title="Previous day" onClick={() => shiftDay(-1)}><ArrowLeft size={18} /></IconButton><IconButton title="Next day" onClick={() => shiftDay(1)}><ArrowRight size={18} /></IconButton><Button secondary onClick={() => setDate(todayDate)}><CalendarDays size={16} />Today</Button><input aria-label="Planner date" type="date" required value={date} onChange={e => { if (e.target.value) setDate(e.target.value); }} /></div></div>
@@ -520,8 +546,26 @@ function Planner() {
         {view === "Month" && Array.from({ length: (start.getDay() + 6) % 7 }, (_, i) => <div key={`blank-${i}`} className="le-calendar-blank" />)}
         {days.map(day => { const items = occurrencesForDay(data.tasks, day); return <section key={day} className={`le-calendar-day ${day === todayDate ? "is-today" : ""}`} onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); update(d => ({ ...d, tasks: d.tasks.map(t => t.id === id ? { ...t, kind: "time-block", date: day, time: t.time || "09:00", minutes: t.minutes || 30 } : t) })); }}><button className="le-day-label" onClick={() => { setDate(day); setView("Day"); }}>{new Date(`${day}T12:00:00`).toLocaleDateString(undefined, { weekday: "short", day: "numeric" })}</button>{items.map(item => <button draggable onDragStart={e => e.dataTransfer.setData("text/plain", item.task.id)} key={`${item.task.id}-${day}`} style={taskColor(data, item.task)} className={`le-time-block ${occurrenceDone(item.task, day) ? "le-completed" : ""}`} onClick={() => setDraft(item.task)}><small>{item.task.time} · {durationLabel(item.task.minutes)}</small><strong>{item.task.title}</strong><span>{item.task.pillar}</span></button>)}</section>; })}
       </>}</div>
-      <Card className="le-todo-panel"><div className="le-row"><div><p className="le-eyebrow">To-do list</p><h2>Tasks for this day.</h2></div><Button secondary onClick={addTodo}><Plus size={16} />Add to-do</Button></div>{!todoTasks.length ? <Empty title="No checklist tasks for this day." action="Add a to-do" onClick={addTodo} /> : <div className="le-todo-list">{todoTasks.map(task => <div key={task.id} className={`le-todo-item ${task.done ? "is-done" : ""}`} style={taskColor(data, task)}><input aria-label={`Complete ${task.title}`} type="checkbox" checked={task.done} onChange={() => toggleDone(task)} /><button type="button" onClick={() => setDraft(task)}><strong>{task.title}</strong><span>{task.pillar}</span></button><IconButton title={`Schedule ${task.title}`} onClick={() => scheduleTodo(task)}><Clock size={16} /></IconButton></div>)}</div>}</Card></div>
-    {draft && <Modal title={isTodoTask(draft) ? "Edit to-do" : "Plan your time"} close={() => setDraft(null)}><form onSubmit={saveTimeBlock}><Field label={isTodoTask(draft) ? "Task" : "Title"}><input required value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} /></Field>{isTodoTask(draft) ? <><Field label="To-do date"><input type="date" required value={draft.date} onChange={e => setDraft({ ...draft, date: e.target.value })} /></Field><Button secondary onClick={() => setDraft({ ...draft, kind: "time-block", date: draft.date || date, time: "09:00", minutes: 30, recurrence: "none" })}><Clock size={16} />Schedule this task</Button></> : <><div className="le-grid-two"><Field label="Date"><input type="date" required value={draft.date} onChange={e => setDraft({ ...draft, date: e.target.value })} /></Field><Field label="Time"><input type="time" required value={draft.time} onChange={e => setDraft({ ...draft, time: e.target.value })} /></Field></div><fieldset><legend>Duration</legend><div className="le-grid-two"><Field label="Duration hours"><input type="number" min="0" max="24" step="1" value={Math.floor(draft.minutes / 60)} onChange={e => { const hours = Math.max(0, Math.min(24, e.target.value === "" ? 0 : Math.floor(Number(e.target.value)))); setDraft({ ...draft, minutes: hours * 60 + (hours === 24 ? 0 : draft.minutes % 60) }); }} /></Field><Field label="Duration minutes"><input name="duration-minutes" type="number" min="0" max={draft.minutes >= 1440 ? 0 : 59} step="1" value={draft.minutes % 60} onChange={e => setDraft({ ...draft, minutes: Math.floor(draft.minutes / 60) * 60 + Math.max(0, Math.min(draft.minutes >= 1440 ? 0 : 59, e.target.value === "" ? 0 : Math.floor(Number(e.target.value)))) })} /></Field></div></fieldset><div className="le-grid-two"><Field label="Repeats"><select value={draft.recurrence ?? "none"} onChange={e => setDraft({ ...draft, recurrence: e.target.value as PlannerTask["recurrence"] })}><option value="none">Does not repeat</option><option value="daily">Daily</option><option value="weekdays">Weekdays</option><option value="weekly">Weekly</option></select></Field><Field label="Repeat until"><input type="date" value={draft.recurrenceEnd ?? ""} disabled={!draft.recurrence || draft.recurrence === "none"} onChange={e => setDraft({ ...draft, recurrenceEnd: e.target.value })} /></Field></div><Button secondary onClick={() => setDraft({ ...draft, kind: "todo", time: "", minutes: 0, recurrence: "none", recurrenceEnd: "" })}>Unschedule</Button></>}<Field label="Notes"><textarea rows={3} value={draft.notes ?? ""} onChange={e => setDraft({ ...draft, notes: e.target.value })} /></Field><Field label="Life pillar"><select required value={draft.pillar} onChange={e => setDraft({ ...draft, pillar: e.target.value })}>{[...new Set([...currentPillars, draft.pillar])].map(p => <option key={p}>{p}</option>)}</select></Field><div className="le-pillar-preview" style={taskColor(data, draft)}><i/><span>{draft.pillar}</span><strong>{draft.title || (isTodoTask(draft) ? "Checklist preview" : "Activity shade preview")}</strong></div><label className="le-check-row"><input type="checkbox" checked={occurrenceDone(draft, date)} onChange={() => setDraft(current => { if (!current) return current; if (current.recurrence && current.recurrence !== "none") { const completed = new Set(current.completedDates ?? []); if (completed.has(date)) completed.delete(date); else completed.add(date); return { ...current, completedDates: [...completed].sort() }; } return { ...current, done: !current.done }; })} />Completed</label><div className="le-row"><SaveButton>{isTodoTask(draft) ? "Save to-do" : "Save time block"}</SaveButton>{data.tasks.some(t => t.id === draft.id) && <IconButton title={isTodoTask(draft) ? "Delete to-do" : "Delete time block"} onClick={() => { update(d => ({ ...d, tasks: d.tasks.filter(t => t.id !== draft.id) })); setDraft(null); }}><Trash2 size={18} /></IconButton>}</div></form></Modal>}
+      <Card className="le-todo-panel"><div className="le-row"><div><p className="le-eyebrow">To-do list</p><h2>Tasks for this day.</h2></div>{todoTasks.length > 0 && <Button secondary onClick={addTodo}><Plus size={16} />Add to-do</Button>}</div>{!todoTasks.length ? <Empty title="No checklist tasks for this day." action="Add a to-do" onClick={addTodo} /> : <div className="le-todo-list">{todoTasks.map(task => <div key={task.id} className={`le-todo-item ${task.done ? "is-done" : ""}`} style={taskColor(data, task)}><input aria-label={`Complete ${task.title}`} type="checkbox" checked={task.done} onChange={() => toggleDone(task)} /><button type="button" onClick={() => setDraft(task)}><strong>{task.title}</strong><span>{task.pillar}</span></button><IconButton title={`Schedule ${task.title}`} onClick={() => scheduleTodo(task)}><Clock size={16} /></IconButton></div>)}</div>}</Card></div>
+    {draft && <Modal title={isTodoTask(draft) ? "Edit to-do" : "Plan your time"} close={() => setDraft(null)}>
+      <form onSubmit={saveTimeBlock}>
+        <Field label={isTodoTask(draft) ? "Task" : "Title"}><input required value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} /></Field>
+        {isTodoTask(draft) ? <>
+          <Field label="To-do date"><input type="date" required value={draft.date} onChange={e => setDraft({ ...draft, date: e.target.value })} /></Field>
+          <Button secondary onClick={() => setDraft({ ...draft, kind: "time-block", date: draft.date || date, time: "09:00", minutes: 0, recurrence: "none" })}><Clock size={16} />Schedule this task</Button>
+        </> : <>
+          <div className="le-grid-two"><Field label="Date"><input type="date" required value={draft.date} onChange={e => setDraft({ ...draft, date: e.target.value })} /></Field><Field label="Time"><input type="time" required value={draft.time} onChange={e => setDraft({ ...draft, time: e.target.value })} /></Field></div>
+          <DurationFields key={`${draft.id}-${draft.kind}`} minutes={draft.minutes} error={durationError} clearError={() => setDurationError("")} />
+          <div className="le-grid-two"><Field label="Repeats"><select value={draft.recurrence ?? "none"} onChange={e => setDraft({ ...draft, recurrence: e.target.value as PlannerTask["recurrence"] })}><option value="none">Does not repeat</option><option value="daily">Daily</option><option value="weekdays">Weekdays</option><option value="weekly">Weekly</option></select></Field><Field label="Repeat until"><input type="date" value={draft.recurrenceEnd ?? ""} disabled={!draft.recurrence || draft.recurrence === "none"} onChange={e => setDraft({ ...draft, recurrenceEnd: e.target.value })} /></Field></div>
+          <Button secondary onClick={() => setDraft({ ...draft, kind: "todo", time: "", minutes: 0, recurrence: "none", recurrenceEnd: "" })}>Unschedule</Button>
+        </>}
+        <Field label="Notes"><textarea rows={3} value={draft.notes ?? ""} onChange={e => setDraft({ ...draft, notes: e.target.value })} /></Field>
+        <Field label="Life pillar"><select required value={draft.pillar} onChange={e => setDraft({ ...draft, pillar: e.target.value })}>{[...new Set([...currentPillars, draft.pillar])].map(p => <option key={p}>{p}</option>)}</select></Field>
+        <div className="le-pillar-preview" style={taskColor(data, draft)}><i/><span>{draft.pillar}</span><strong>{draft.title || (isTodoTask(draft) ? "Checklist preview" : "Activity shade preview")}</strong></div>
+        <label className="le-check-row"><input type="checkbox" checked={occurrenceDone(draft, date)} onChange={() => setDraft(current => { if (!current) return current; if (current.recurrence && current.recurrence !== "none") { const completed = new Set(current.completedDates ?? []); if (completed.has(date)) completed.delete(date); else completed.add(date); return { ...current, completedDates: [...completed].sort() }; } return { ...current, done: !current.done }; })} />Completed</label>
+        <div className="le-row"><SaveButton>{isTodoTask(draft) ? "Save to-do" : "Save time block"}</SaveButton>{data.tasks.some(t => t.id === draft.id) && <IconButton title={isTodoTask(draft) ? "Delete to-do" : "Delete time block"} onClick={() => { update(d => ({ ...d, tasks: d.tasks.filter(t => t.id !== draft.id) })); setDraft(null); }}><Trash2 size={18} /></IconButton>}</div>
+      </form>
+    </Modal>}
   </>;
 }
 
