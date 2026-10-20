@@ -4,16 +4,23 @@ const ASSETS = 'lifeedit-assets-v2';
 const routes = new Set(['/life-reset','/dashboard','/planner','/focus','/life-edit','/journal','/insights','/finance','/budget','/fitness','/habits','/quit-habits','/social','/spiritual','/settings','/onboarding','/login']);
 self.addEventListener('install', event => {
   self.skipWaiting();
+  if (DEVELOPMENT) return;
   event.waitUntil(caches.open(SHELL).then(cache => cache.addAll(['/offline.html','/icon-192.png','/icon-512.png','/apple-touch-icon.png'])));
 });
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
+    if (DEVELOPMENT) {
+      await Promise.all(keys.filter(key => key.startsWith('lifeedit-')).map(key => caches.delete(key)));
+      await self.registration.unregister();
+      return;
+    }
     await Promise.all(keys.filter(key => key.startsWith('lifeedit-') && key !== SHELL && key !== ASSETS).map(key => caches.delete(key)));
     await self.clients.claim();
   })());
 });
 self.addEventListener('fetch', event => {
+  if (DEVELOPMENT) return;
   const request = event.request;
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;

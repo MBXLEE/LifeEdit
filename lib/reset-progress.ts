@@ -1,6 +1,8 @@
 import type { LifeData, LifeResetProgram, ResetStatus, ResetCommitment, ResetActivity } from "./life-store";
+import { completedTaskDates } from "./planner";
 const dayMs = 86_400_000;
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+export const supportedResetLinkedFeatures = ["Fitness", "Habits", "Journal", "Planner", "Spiritual", "Focus"] as const;
 function today() { return isoDate(new Date()); }
 export function isoDate(date: Date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`; }
 export function parseDate(value: string) { return new Date(`${value}T12:00:00`); }
@@ -29,7 +31,7 @@ export function weekStart(value: string) { const d = parseDate(value); d.setDate
 export function weekEnd(value: string) { return addDays(weekStart(value), 6); }
 export function windowKey(commitment: ResetCommitment, start: string, end = start) { return `${commitment.id}:${start}:${end}`; }
 export function commitmentSummary(commitment: ResetCommitment) {
-  if (commitment.type === "daily") return "Every day";
+  if (commitment.type === "daily") return commitment.targetPerDay && commitment.targetPerDay > 1 ? `${commitment.targetPerDay}x every day` : "Every day";
   if (commitment.type === "specific-days") return `On ${commitment.scheduleDays?.map(day => dayNames[day]).join(", ") || "selected days"}`;
   if (commitment.type === "weekly-quantity") return `${commitment.targetPerWeek ?? 1}x per week`;
   if (commitment.type === "weekly-recurring") return `Weekly${commitment.scheduleDays?.length ? ` on ${commitment.scheduleDays.map(day => dayNames[day]).join(", ")}` : ""}`;
@@ -56,24 +58,37 @@ export function resetDateRange(reset: LifeResetProgram, through = today()) {
 export function syncedActivities(data: LifeData, reset: LifeResetProgram, commitment: ResetCommitment): ResetActivity[] {
   const start = reset.startDate, end = reset.endDate;
   const inRange = (date: string) => date >= start && date <= end;
+  const words = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().split(" ").filter(word => word.length > 2);
+  const sourceWords = words(commitment.sourceHint || commitment.title);
+  const matches = (value: string) => {
+    const valueWords = new Set(words(value));
+    return sourceWords.length > 0 && sourceWords.every(word => valueWords.has(word));
+  };
   if (commitment.linkedFeature === "Fitness") {
-    return data.workoutLogs.filter(log => inRange(log.date)).map(log => ({ id: `fitness-${log.id}`, commitmentId: commitment.id, date: log.date, source: "fitness", externalId: log.id, note: log.name }));
+    const inWindow = data.workoutLogs.filter(log => inRange(log.date));
+    const genericFitness = sourceWords.some(word => ["workout", "exercise", "move", "movement", "fitness"].includes(word));
+    const matched = commitment.sourceHint && !genericFitness ? inWindow.filter(log => matches(log.name)) : inWindow;
+    return matched.map(log => ({ id: `fitness-${log.id}`, commitmentId: commitment.id, date: log.date, source: "fitness", externalId: log.id, note: log.name }));
   }
   if (commitment.linkedFeature === "Habits") {
-    const hint = (commitment.sourceHint || commitment.title).toLowerCase();
-    return data.habits.filter(habit => habit.direction === "build" && (habit.name.toLowerCase().includes(hint) || hint.includes(habit.name.toLowerCase()))).flatMap(habit => habit.dates.filter(inRange).map(date => ({ id: `habit-${habit.id}-${date}`, commitmentId: commitment.id, date, source: "habit" as const, externalId: habit.id, note: habit.name })));
+    return data.habits.filter(habit => habit.direction === "build" && matches(habit.name)).flatMap(habit => habit.dates.filter(inRange).map(date => ({ id: `habit-${habit.id}-${date}`, commitmentId: commitment.id, date, source: "habit" as const, externalId: habit.id, note: habit.name })));
   }
   if (commitment.linkedFeature === "Journal") {
-    return data.journals.filter(journal => inRange(journal.date)).map(journal => ({ id: `journal-${journal.id}`, commitmentId: commitment.id, date: journal.date, source: "journal", externalId: journal.id, note: journal.title }));
+    return data.journals.filter(journal => inRange(journal.date) && journal.pillar === commitment.pillar && (!commitment.sourceHint || matches(`${journal.title} ${journal.body}`))).map(journal => ({ id: `journal-${journal.id}`, commitmentId: commitment.id, date: journal.date, source: "journal", externalId: journal.id, note: journal.title }));
   }
   if (commitment.linkedFeature === "Spiritual") {
-    return [...data.prayers.filter(row => inRange(row.date)).map(row => ({ id: `prayer-${row.id}`, commitmentId: commitment.id, date: row.date, source: "spiritual" as const, externalId: row.id, note: row.title })), ...data.studyPlans.filter(row => inRange(row.date)).map(row => ({ id: `study-${row.id}`, commitmentId: commitment.id, date: row.date, source: "spiritual" as const, externalId: row.id, note: row.title }))];
+    const prayerOnly = sourceWords.some(word => ["pray", "prayer", "quiet"].includes(word));
+    const studyOnly = sourceWords.some(word => ["read", "reading", "passage", "study", "scripture"].includes(word));
+    return [
+      ...data.prayers.filter(row => inRange(row.date) && (!studyOnly || prayerOnly)).map(row => ({ id: `prayer-${row.id}`, commitmentId: commitment.id, date: row.date, source: "spiritual" as const, externalId: row.id, note: row.title })),
+      ...data.studyPlans.filter(row => inRange(row.date) && (!prayerOnly || studyOnly)).map(row => ({ id: `study-${row.id}`, commitmentId: commitment.id, date: row.date, source: "spiritual" as const, externalId: row.id, note: row.title }))
+    ];
   }
   if (commitment.linkedFeature === "Planner") {
-    return data.tasks.filter(task => task.done && inRange(task.date) && task.title.toLowerCase().includes(commitment.title.split(" ")[0].toLowerCase())).map(task => ({ id: `planner-${task.id}`, commitmentId: commitment.id, date: task.date, source: "planner", externalId: task.id, note: task.title }));
+    return data.tasks.filter(task => matches(task.title)).flatMap(task => completedTaskDates(task, start, end).map(date => ({ id: `planner-${task.id}-${date}`, commitmentId: commitment.id, date, source: "planner" as const, externalId: `${task.id}:${date}`, note: task.title })));
   }
   if (commitment.linkedFeature === "Focus") {
-    return data.focus.filter(row => inRange(row.date)).map(row => ({ id: `focus-${row.id}`, commitmentId: commitment.id, date: row.date, source: "focus", externalId: row.id, note: row.name, value: row.seconds }));
+    return data.focus.filter(row => inRange(row.date) && (!commitment.sourceHint || matches(row.name))).map(row => ({ id: `focus-${row.id}`, commitmentId: commitment.id, date: row.date, source: "focus", externalId: row.id, note: row.name, value: row.seconds }));
   }
   return [];
 }
@@ -86,8 +101,9 @@ export function allActivities(data: LifeData, reset: LifeResetProgram, commitmen
 }
 export function activityCountInWindow(data: LifeData, reset: LifeResetProgram, commitment: ResetCommitment, start: string, end = start) {
   if (commitment.type === "photo") return reset.photos.filter(photo => photo.date >= start && photo.date <= end).length;
-  const dates = new Set(allActivities(data, reset, commitment).filter(activity => activity.date >= start && activity.date <= end).map(activity => activity.date));
-  return dates.size;
+  const activities = allActivities(data, reset, commitment).filter(activity => activity.date >= start && activity.date <= end);
+  const syncedDates = new Set(activities.filter(activity => activity.source !== "reset").map(activity => activity.date));
+  return activities.filter(activity => activity.source !== "reset" || !syncedDates.has(activity.date)).length;
 }
 export function commitmentComplete(data: LifeData, reset: LifeResetProgram, commitment: ResetCommitment, date: string) {
   if (commitment.type === "weekly-quantity") {
@@ -98,5 +114,5 @@ export function commitmentComplete(data: LifeData, reset: LifeResetProgram, comm
     const start = weekStart(date), end = weekEnd(date);
     return activityCountInWindow(data, reset, commitment, start < reset.startDate ? reset.startDate : start, end > reset.endDate ? reset.endDate : end) >= 1;
   }
-  return activityCountInWindow(data, reset, commitment, date) > 0;
+  return activityCountInWindow(data, reset, commitment, date) >= (commitment.targetPerDay ?? 1);
 }

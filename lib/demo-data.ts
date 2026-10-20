@@ -54,7 +54,7 @@ export function createDemoData(base: LifeData, now = octoberDemoDate): LifeData 
       { id: "demo-habit-2", name: "Daily walk", direction: "build", dates: [date(-3), date(-1)], start: date(-7), setbacks: [] },
       { id: "demo-habit-3", name: "Reduce late-night scrolling", direction: "quit", dates: [], start: date(-12), setbacks: [] },
     ],
-    journals: journalHistory.map(({ rating, ...journal }) => journal),
+    journals: journalHistory.map(journal => ({ id: journal.id, title: journal.title, template: journal.template, pillar: journal.pillar, body: journal.body, date: journal.date, photos: journal.photos })),
     journalRatings: journalHistory.flatMap(journal => journal.rating ? [{ id: `rating-${journal.id}`, journalId: journal.id, pillar: journal.pillar, rating: journal.rating, date: journal.date }] : []),
     goals: [
       { id: "demo-goal-1", title: "Build an emergency fund", horizon: "Annual", parent: "", pillars: ["Financial"], progress: 40, archived: false, due: date(180), notes: "A little each month adds up." },

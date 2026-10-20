@@ -31,7 +31,7 @@ export type Goal = { id: string; title: string; horizon: string; parent: string;
 export type Habit = { id: string; name: string; direction: "build" | "quit"; dates: string[]; start: string; setbacks: { date: string; note: string }[] };
 export type Task = {
   id: string; title: string; date: string; time: string; minutes: number; pillar: string; done: boolean; kind?: "time-block" | "todo";
-  notes?: string; recurrence?: "none" | "daily" | "weekdays" | "weekly"; recurrenceEnd?: string; completedDates?: string[];
+  notes?: string; recurrence?: "none" | "daily" | "weekdays" | "weekly" | "monthly"; recurrenceEnd?: string; completedDates?: string[]; excludedDates?: string[];
 };
 export type Workout = { id: string; name: string; category: string; warmup: string; cooldown?: string; notes?: string; archived?: boolean; exercises: (Omit<Exercise, "category" | "seconds" | "notes"> & Partial<Pick<Exercise, "category" | "seconds" | "notes">>)[] };
 export type JournalPhoto = { id: string; source: string; order: number; name?: string; createdAt: string };
@@ -42,7 +42,7 @@ export type ResetCommitmentType = "daily" | "specific-days" | "weekly-quantity" 
 export type ResetLinkedFeature = "Fitness" | "Habits" | "Journal" | "Planner" | "Finance" | "Goals" | "Spiritual" | "Focus";
 export type ResetCommitment = {
   id: string; title: string; type: ResetCommitmentType; required: boolean; pillar: string;
-  description?: string; scheduleDays?: number[]; targetPerWeek?: number; everyNDays?: number;
+  description?: string; scheduleDays?: number[]; targetPerDay?: number; targetPerWeek?: number; everyNDays?: number;
   limitAmount?: number; limitUnit?: string; linkedFeature?: ResetLinkedFeature; sourceHint?: string;
 };
 export type ResetActivity = { id: string; commitmentId: string; date: string; source: "reset" | "fitness" | "habit" | "journal" | "planner" | "finance" | "spiritual" | "focus"; externalId?: string; note?: string; value?: number };
@@ -202,7 +202,7 @@ export function LifeProvider({ children }: { children: ReactNode }) {
     }
     void load();
     return () => { alive = false; };
-  }, [attempt, pathname]);
+  }, [attempt, pathname, ready]);
   useEffect(() => {
     if (!ready) return;
     document.documentElement.dataset.theme = data.theme.toLowerCase();

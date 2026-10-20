@@ -10,7 +10,7 @@ import { useLife, uid, today, type LifeData, type LifeResetProgram, type ResetAc
 import { isDemoMode } from "@/lib/app-mode";
 import { DEMO_KEY, selectDemoProfile } from "@/lib/demo-storage";
 
-import { parseDate, addDays, daysBetween, formatDate, allowanceFor, endDate, statusFor, dayOfReset, progressFor, weekStart, weekEnd, windowKey, commitmentSummary, dueOnDay, resetDateRange, allActivities, activityCountInWindow, commitmentComplete } from "@/lib/reset-progress";
+import { parseDate, addDays, daysBetween, formatDate, allowanceFor, endDate, statusFor, dayOfReset, progressFor, weekStart, weekEnd, windowKey, commitmentSummary, dueOnDay, resetDateRange, allActivities, activityCountInWindow, commitmentComplete, supportedResetLinkedFeatures } from "@/lib/reset-progress";
 import { Modal as ConfirmModal } from "./workspace-ui";
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -21,7 +21,7 @@ type ResetTemplate = {
 
 const resetTemplates: ResetTemplate[] = [
   { id: "75-hard", name: "75 Hard", duration: 75, intensity: "Intense", accountability: "Strict", purpose: "A demanding discipline reset built around consistency, training, nutrition, reading, hydration, and daily proof.", recommendation: "Best with a visible accountability partner and a clear restart rule.", pillars: ["Physical", "Mental & Emotional", "Personal Growth"], mood: "discipline", commitments: [
-    { title: "Complete two workouts", type: "daily", required: true, pillar: "Physical", linkedFeature: "Fitness", sourceHint: "workout", description: "Log both sessions before the day closes." },
+    { title: "Complete two workouts", type: "daily", targetPerDay: 2, required: true, pillar: "Physical", linkedFeature: "Fitness", sourceHint: "workout", description: "Log both sessions before the day closes." },
     { title: "Follow your chosen nutrition rules", type: "daily", required: true, pillar: "Physical" },
     { title: "Drink your water target", type: "daily", required: true, pillar: "Physical" },
     { title: "Read 10 pages", type: "daily", required: true, pillar: "Personal Growth", linkedFeature: "Habits", sourceHint: "read" },
@@ -93,7 +93,32 @@ function Progress({ value }: { value: number }) {
   return <div className="le-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={safe}><span style={{ width: `${safe}%` }} /></div>;
 }
 function Modal({ title, close, children }: { title: string; close: () => void; children: ReactNode }) {
-  return <div className="lr-modal-shell" role="dialog" aria-modal="true" aria-label={title}><button type="button" className="lr-modal-scrim" aria-label="Close" onClick={close} /><section className="lr-modal"><div className="le-modal-header"><h2>{title}</h2><IconButton title="Close dialog" onClick={close}><X size={20} /></IconButton></div>{children}</section></div>;
+  const ref = useRef<HTMLElement>(null);
+  const closeRef = useRef(close); closeRef.current = close;
+  useEffect(() => {
+    const count = Number(document.body.dataset.modalCount ?? "0");
+    if (!count) { const scrollY = window.scrollY; document.body.dataset.modalScrollY = String(scrollY); document.documentElement.style.overflow = "hidden"; document.body.style.overflow = "hidden"; document.body.style.position = "fixed"; document.body.style.top = `-${scrollY}px`; document.body.style.left = "0"; document.body.style.right = "0"; document.body.style.width = "100%"; }
+    document.body.dataset.modalCount = String(count + 1);
+    const focusable = () => [...(ref.current?.querySelectorAll<HTMLElement>('button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])') ?? [])];
+    window.requestAnimationFrame(() => focusable()[0]?.focus());
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { event.preventDefault(); closeRef.current(); return; }
+      if (event.key !== "Tab") return;
+      const items = focusable(); if (!items.length) return;
+      const first = items[0], last = items.at(-1)!;
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", keydown);
+    return () => {
+      document.removeEventListener("keydown", keydown);
+      const next = Math.max(0, Number(document.body.dataset.modalCount ?? "1") - 1);
+      if (next) { document.body.dataset.modalCount = String(next); return; }
+      const scrollY = Number(document.body.dataset.modalScrollY ?? "0"); delete document.body.dataset.modalCount; delete document.body.dataset.modalScrollY;
+      document.documentElement.style.overflow = ""; document.body.style.overflow = ""; document.body.style.position = ""; document.body.style.top = ""; document.body.style.left = ""; document.body.style.right = ""; document.body.style.width = ""; window.scrollTo(0, scrollY);
+    };
+  }, []);
+  return <div className="lr-modal-shell" role="presentation"><button type="button" className="lr-modal-scrim" aria-label="Close" onClick={close} /><section ref={ref} className="lr-modal" role="dialog" aria-modal="true" aria-label={title} tabIndex={-1}><div className="le-modal-header"><h2>{title}</h2><IconButton title="Close dialog" onClick={close}><X size={20} /></IconButton></div>{children}</section></div>;
 }
 
 function missedWindows(data: LifeData, reset: LifeResetProgram, asOf = today()) {
@@ -251,16 +276,7 @@ export function LifeResetWorkspace() {
         const nextActivities = existing ? item.activities.filter(activity => !(activity.source === "reset" && activity.commitmentId === commitment.id && activity.date === date)) : [...item.activities, { id: uid(), commitmentId: commitment.id, date, source: "reset" as const, externalId: manualKey }];
         return { ...item, activities: nextActivities, updatedAt: new Date().toISOString() };
       });
-      const next: LifeData = { ...d, lifeResets: resets };
-      if (!existing && commitment.linkedFeature === "Fitness" && !d.workoutLogs.some(log => log.id === manualKey)) {
-        next.workoutLogs = [...d.workoutLogs, { id: manualKey, name: commitment.title, date, minutes: 30, volume: 0, notes: `Logged from Life Reset: ${reset.name}` }];
-      }
-      if (existing && commitment.linkedFeature === "Fitness") next.workoutLogs = d.workoutLogs.filter(log => log.id !== manualKey);
-      if (!existing && commitment.linkedFeature === "Habits") {
-        const found = d.habits.find(habit => habit.direction === "build" && habit.name.toLowerCase() === commitment.title.toLowerCase());
-        next.habits = found ? d.habits.map(habit => habit.id === found.id ? { ...habit, dates: habit.dates.includes(date) ? habit.dates : [...habit.dates, date] } : habit) : [...d.habits, { id: uid(), name: commitment.title, direction: "build", dates: [date], start: reset.startDate, setbacks: [] }];
-      }
-      return next;
+      return { ...d, lifeResets: resets };
     });
   }
   function completeDay(reset: LifeResetProgram) {
@@ -304,10 +320,12 @@ export function LifeResetWorkspace() {
       pillar: String(form.get("pillar")),
       required: form.get("required") === "on",
       targetPerWeek: Number(form.get("targetPerWeek")) || undefined,
+      targetPerDay: Number(form.get("targetPerDay")) || undefined,
       everyNDays: Number(form.get("everyNDays")) || undefined,
       limitAmount: Number(form.get("limitAmount")) || undefined,
       limitUnit: String(form.get("limitUnit") || ""),
       linkedFeature: String(form.get("linkedFeature") || "") as ResetLinkedFeature || undefined,
+      sourceHint: String(form.get("sourceHint") || "").trim() || undefined,
       scheduleDays: Array.from(form.getAll("scheduleDays")).map(Number)
     };
     const changes = [commitment.title !== next.title && `"${commitment.title}" renamed to "${next.title}"`, commitment.type !== next.type && `${commitment.title} changed from ${commitmentSummary(commitment)} to ${commitmentSummary(next)}`, commitment.required !== next.required && `${next.title} marked ${next.required ? "required" : "optional"}`].filter(Boolean).join(". ");
@@ -429,8 +447,9 @@ function AttentionMoment({ reset, data, onUseRestore, restartReset }: { reset: L
 function ModeCommitmentRow({ data, reset, commitment, toggle }: { data: LifeData; reset: LifeResetProgram; commitment: ResetCommitment; toggle: () => void }) {
   const done = commitmentComplete(data, reset, commitment, today());
   const synced = allActivities(data, reset, commitment).some(activity => activity.date === today() && activity.source !== "reset");
-  const context = commitment.type === "weekly-quantity" ? `${activityCountInWindow(data, reset, commitment, weekStart(today()), weekEnd(today()))} of ${commitment.targetPerWeek ?? 1} this week` : commitmentSummary(commitment);
-  return <label className={`lr-clean-row ${done ? "is-done" : ""}`}><input type="checkbox" checked={done} onChange={toggle} /><span><strong>{commitment.title}</strong><small>{context}{synced ? ` · Synced from ${commitment.linkedFeature}` : ""}</small></span></label>;
+  const todayCount = activityCountInWindow(data, reset, commitment, today());
+  const context = commitment.type === "weekly-quantity" ? `${activityCountInWindow(data, reset, commitment, weekStart(today()), weekEnd(today()))} of ${commitment.targetPerWeek ?? 1} this week` : (commitment.targetPerDay ?? 1) > 1 ? `${todayCount} of ${commitment.targetPerDay} today` : commitmentSummary(commitment);
+  return <label className={`lr-clean-row ${done ? "is-done" : ""}`}><input type="checkbox" checked={done} disabled={synced} onChange={toggle} /><span><strong>{commitment.title}</strong><small>{context}{synced ? ` · Synced from ${commitment.linkedFeature}` : ""}</small></span></label>;
 }
 
 function WeeklyCommitment({ data, reset, commitment }: { data: LifeData; reset: LifeResetProgram; commitment: ResetCommitment }) {
@@ -464,7 +483,7 @@ function ResetManagement({ data, active, scheduled, completed, selected, selectR
   return <section className="lr-resets-view">
     <div className="lr-section-heading"><div><p className="le-eyebrow">Resets</p><h1>Your Reset seasons</h1></div><Button onClick={() => openCreator(null)}><Plus size={16} />New Reset</Button></div>
     <div className="lr-reset-switcher">{[...active, ...scheduled, ...completed, ...data.lifeResets.filter(reset => ["draft", "failed", "abandoned"].includes(reset.status))].map(reset => <button key={reset.id} aria-pressed={shown?.id === reset.id} onClick={() => selectReset(reset.id)}><strong>{reset.name}</strong><span>{statusFor(reset)} · Day {dayOfReset(reset)} of {reset.duration}</span></button>)}</div>
-    {shown ? <section className="lr-programme-details"><div><p className="le-eyebrow">Programme details</p><div className="le-row"><h2>{shown.name}</h2><Button secondary onClick={() => deleteReset(shown)}><Trash2 size={16} />Delete Reset</Button></div><p>{shown.why || shown.outcome}</p><div className="lr-detail-stats"><span>{shown.accountability}</span><span>{resetStats(data, shown).editsRemaining} adjustments available</span><span>{shown.restoreAllowance - shown.restores.length} restores remaining</span></div></div><div className="lr-rule-list">{shown.commitments.map(commitment => <div key={commitment.id}><span>{commitmentSummary(commitment)}</span><strong>{commitment.title}</strong><small>{commitment.pillar}{commitment.linkedFeature ? ` · syncs with ${commitment.linkedFeature}` : ""}</small><IconButton title={`Adjust ${commitment.title}`} onClick={() => editCommitment(shown, commitment)}><Pencil size={16} /></IconButton></div>)}</div></section> : <EmptyMode title="No Reset programmes yet." action="Discover programmes" onAction={() => openCreator(null)} />}
+    {shown ? <section className="lr-programme-details"><div><p className="le-eyebrow">Programme details</p><div className="le-row"><h2>{shown.name}</h2><Button secondary onClick={() => deleteReset(shown)}><Trash2 size={16} />Delete Reset</Button></div><p>{shown.why || shown.outcome}</p><div className="lr-detail-stats"><span>{shown.accountability}</span><span>{resetStats(data, shown).editsRemaining} adjustments available</span><span>{shown.restoreAllowance - shown.restores.length} restores remaining</span></div></div><div className="lr-rule-list">{shown.commitments.map(commitment => <div key={commitment.id}><span>{commitmentSummary(commitment)}</span><strong>{commitment.title}</strong><small>{commitment.pillar}{supportedResetLinkedFeatures.includes(commitment.linkedFeature as typeof supportedResetLinkedFeatures[number]) ? ` · syncs with ${commitment.linkedFeature}` : " · manual tracking"}</small><IconButton title={`Adjust ${commitment.title}`} onClick={() => editCommitment(shown, commitment)}><Pencil size={16} /></IconButton></div>)}</div></section> : <EmptyMode title="No Reset programmes yet." action="Discover programmes" onAction={() => openCreator(null)} />}
     {scheduled.length > 0 && <section className="lr-quiet-list"><p className="le-eyebrow">Upcoming</p>{scheduled.map(reset => <button key={reset.id} onClick={() => selectReset(reset.id)}><CalendarDays size={16} /><span>{reset.name} starts {formatDate(reset.startDate)}</span></button>)}</section>}
     {completed.length > 0 && <section className="lr-completed-seasons"><div><p className="le-eyebrow">Completed seasons</p><h2>Review the finish and create a keepsake.</h2></div>{completed.map(reset => {
       const stats = resetStats(data, reset);
@@ -475,9 +494,11 @@ function ResetManagement({ data, active, scheduled, completed, selected, selectR
 
 function CreatorCommitment({ commitment, pillars, update, remove }: { commitment: ResetCommitment; pillars: string[]; update: (patch: Partial<ResetCommitment>) => void; remove: () => void }) {
   return <div className="lr-commitment-row">
-    <input aria-label="Commitment title" value={commitment.title} onChange={e => update({ title: e.target.value })} />
+    <input aria-label="Commitment title" required value={commitment.title} onChange={e => update({ title: e.target.value })} />
     <select aria-label="Commitment type" value={commitment.type} onChange={e => update({ type: e.target.value as ResetCommitmentType })}>{["daily", "specific-days", "weekly-quantity", "weekly-recurring", "avoidance", "limit", "photo"].map(item => <option key={item} value={item}>{item.replace("-", " ")}</option>)}</select>
     <select aria-label="Pillar" value={commitment.pillar} onChange={e => update({ pillar: e.target.value })}>{pillars.map(pillar => <option key={pillar}>{pillar}</option>)}</select>
+    <select aria-label="Sync with" value={supportedResetLinkedFeatures.includes(commitment.linkedFeature as typeof supportedResetLinkedFeatures[number]) ? commitment.linkedFeature : ""} onChange={e => update({ linkedFeature: (e.target.value || undefined) as ResetLinkedFeature | undefined, sourceHint: e.target.value ? commitment.sourceHint : undefined })}><option value="">Manual tracking</option>{supportedResetLinkedFeatures.map(item => <option key={item}>{item}</option>)}</select>
+    {commitment.linkedFeature && supportedResetLinkedFeatures.includes(commitment.linkedFeature as typeof supportedResetLinkedFeatures[number]) && <input aria-label="Source match" value={commitment.sourceHint ?? ""} placeholder="Optional exact words to match" onChange={e => update({ sourceHint: e.target.value || undefined })} />}
     {(commitment.type === "specific-days" || commitment.type === "weekly-recurring") && <div className="lr-day-pills">{dayNames.map((day, index) => <button type="button" key={day} aria-pressed={commitment.scheduleDays?.includes(index) ?? false} onClick={() => update({ scheduleDays: commitment.scheduleDays?.includes(index) ? commitment.scheduleDays.filter(item => item !== index) : [...(commitment.scheduleDays ?? []), index] })}>{day}</button>)}</div>}
     {commitment.type === "weekly-quantity" && <input aria-label="Weekly target" type="number" min={1} max={14} value={commitment.targetPerWeek ?? 1} onChange={e => update({ targetPerWeek: Number(e.target.value) })} />}
     {commitment.type === "photo" && <input aria-label="Photo frequency" type="number" min={1} max={30} value={commitment.everyNDays ?? 10} onChange={e => update({ everyNDays: Number(e.target.value) })} />}
@@ -524,7 +545,7 @@ function ResetDetail({ data, reset, allPillars, back, toggleActivity, completeDa
     <div className="lr-detail-grid">
       <Card>
         <div className="le-row"><div><p className="le-eyebrow">Programme rules</p><h2>Commitments and windows</h2></div></div>
-        <div className="lr-rule-list">{reset.commitments.map(commitment => <div key={commitment.id}><span>{commitment.required ? "Required" : "Optional"}</span><strong>{commitment.title}</strong><small>{commitmentSummary(commitment)} · {commitment.pillar}{commitment.linkedFeature ? ` · syncs with ${commitment.linkedFeature}` : ""}</small><IconButton title={`Adjust ${commitment.title}`} disabled={statusFor(reset) === "active" && stats.editsRemaining <= 0} onClick={() => editCommitment(reset, commitment)}><Pencil size={16} /></IconButton></div>)}</div>
+        <div className="lr-rule-list">{reset.commitments.map(commitment => <div key={commitment.id}><span>{commitment.required ? "Required" : "Optional"}</span><strong>{commitment.title}</strong><small>{commitmentSummary(commitment)} · {commitment.pillar}{supportedResetLinkedFeatures.includes(commitment.linkedFeature as typeof supportedResetLinkedFeatures[number]) ? ` · syncs with ${commitment.linkedFeature}` : " · manual tracking"}</small><IconButton title={`Adjust ${commitment.title}`} disabled={statusFor(reset) === "active" && stats.editsRemaining <= 0} onClick={() => editCommitment(reset, commitment)}><Pencil size={16} /></IconButton></div>)}</div>
       </Card>
       <Card>
         <p className="le-eyebrow">This week</p><h2>Weekly progress</h2>
@@ -568,9 +589,9 @@ function CommitmentEditForm({ reset, commitment, pillars, data, save }: { reset:
     {disabled && <p className="le-error">The structured adjustment allowance has been used for this active Reset.</p>}
     <Field label="Title"><input name="title" required defaultValue={commitment.title} /></Field>
     <div className="lr-form-grid"><Field label="Type"><select name="type" defaultValue={commitment.type}>{["daily", "specific-days", "weekly-quantity", "weekly-recurring", "avoidance", "limit", "photo"].map(item => <option key={item} value={item}>{item.replace("-", " ")}</option>)}</select></Field><Field label="Pillar"><select name="pillar" defaultValue={commitment.pillar}>{pillars.map(pillar => <option key={pillar}>{pillar}</option>)}</select></Field></div>
-    <div className="lr-form-grid"><Field label="Weekly target"><input name="targetPerWeek" type="number" min={1} defaultValue={commitment.targetPerWeek ?? ""} /></Field><Field label="Photo every X days"><input name="everyNDays" type="number" min={1} defaultValue={commitment.everyNDays ?? ""} /></Field><Field label="Limit amount"><input name="limitAmount" type="number" min={1} defaultValue={commitment.limitAmount ?? ""} /></Field><Field label="Limit unit"><input name="limitUnit" defaultValue={commitment.limitUnit ?? ""} /></Field></div>
+    <div className="lr-form-grid"><Field label="Daily target"><input name="targetPerDay" type="number" min={1} defaultValue={commitment.targetPerDay ?? ""} /></Field><Field label="Weekly target"><input name="targetPerWeek" type="number" min={1} defaultValue={commitment.targetPerWeek ?? ""} /></Field><Field label="Photo every X days"><input name="everyNDays" type="number" min={1} defaultValue={commitment.everyNDays ?? ""} /></Field><Field label="Limit amount"><input name="limitAmount" type="number" min={1} defaultValue={commitment.limitAmount ?? ""} /></Field><Field label="Limit unit"><input name="limitUnit" defaultValue={commitment.limitUnit ?? ""} /></Field></div>
     <fieldset className="lr-fieldset"><legend>Scheduled days</legend><div className="lr-day-pills">{dayNames.map((day, index) => <label key={day}><input type="checkbox" name="scheduleDays" value={index} defaultChecked={commitment.scheduleDays?.includes(index)} />{day}</label>)}</div></fieldset>
-    <div className="lr-form-grid"><Field label="Sync with"><select name="linkedFeature" defaultValue={commitment.linkedFeature ?? ""}><option value="">No sync</option>{["Fitness", "Habits", "Journal", "Planner", "Finance", "Goals", "Spiritual", "Focus"].map(item => <option key={item}>{item}</option>)}</select></Field><label className="le-check-row"><input name="required" type="checkbox" defaultChecked={commitment.required} />Required commitment</label></div>
+    <div className="lr-form-grid"><Field label="Sync with"><select name="linkedFeature" defaultValue={supportedResetLinkedFeatures.includes(commitment.linkedFeature as typeof supportedResetLinkedFeatures[number]) ? commitment.linkedFeature : ""}><option value="">Manual tracking</option>{supportedResetLinkedFeatures.map(item => <option key={item}>{item}</option>)}</select></Field><Field label="Source match (optional)"><input name="sourceHint" defaultValue={commitment.sourceHint ?? ""} placeholder="Words from the linked record" /></Field><label className="le-check-row"><input name="required" type="checkbox" defaultChecked={commitment.required} />Required commitment</label></div>
     <p className="le-muted">Saving records a visible programme adjustment in the timeline.</p>
     <Button type="submit" disabled={disabled}><Check size={16} />Save adjustment</Button>
   </form>;

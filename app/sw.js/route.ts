@@ -5,7 +5,7 @@ import { notificationWorkerSource } from "@/lib/notification-worker";
 
 export const dynamic = "force-static";
 export function GET() {
-  return new Response(`const MODE = ${JSON.stringify(APP_MODE)}; const VERSION = ${JSON.stringify(process.env.NEXT_PUBLIC_PWA_VERSION)};\n${workerSource}
+  return new Response(`const MODE = ${JSON.stringify(APP_MODE)}; const VERSION = ${JSON.stringify(process.env.NEXT_PUBLIC_PWA_VERSION)}; const DEVELOPMENT = ${JSON.stringify(process.env.NODE_ENV !== "production")};\n${workerSource}
 ${notificationWorkerSource}`, {
     headers: { "Content-Type": "application/javascript; charset=utf-8", "Cache-Control": "no-cache", "Service-Worker-Allowed": "/" },
   });

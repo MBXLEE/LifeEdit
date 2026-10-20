@@ -6,6 +6,7 @@ import { budgetGuidanceSummary, journalRatingStats, nextReviewDate,reviewDue,typ
 import { pillarEvidence } from "@/lib/pillar-evidence";
 import { Button,Card,Field,Heading,Modal,Progress,RecordActions,SaveButton } from "./workspace-ui";
 import { Trend } from "./fitness-progress";
+import { completedTaskDays, taskOccurrenceCount } from "@/lib/planner";
 export function InsightsWorkspace() {
   const {data,update}=useLife();const [trendPillar,setTrendPillar]=useState(data.lifePillars?.[0]??pillars[0]);const [period,setPeriod]=useState("30");const [draft,setDraft]=useState<Review|null>(null);const date=today();const history=data.reviews.slice().sort((a,b)=>a.date.localeCompare(b.date));const latest=history.at(-1);const previous=history.at(-2)?.ratings??data.assessment;const current=latest?.ratings??data.assessment;
   const currentPillars=data.lifePillars?.length?data.lifePillars:pillars;const days=Number(period);const start=(()=>{const d=new Date(`${date}T12:00:00`);d.setDate(d.getDate()-days+1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;})();
@@ -14,7 +15,7 @@ export function InsightsWorkspace() {
   const linkedReview = useRef(add);
   useEffect(() => { if (new URLSearchParams(window.location.search).get("review") === "new") linkedReview.current(); }, []);
   const summaries=currentPillars.map(p=>{
-    const stats=journalRatingStats(data,p,date);const goals=data.goals.filter(g=>!g.archived&&g.pillars.includes(p));const doneTasks=data.tasks.filter(t=>t.pillar===p&&t.done&&recent(t.date)).length;const journals=data.journals.filter(j=>j.pillar===p&&recent(j.date)).length;const score=evidence.find(row=>row.pillar===p)?.score??0;
+    const stats=journalRatingStats(data,p,date);const goals=data.goals.filter(g=>!g.archived&&g.pillars.includes(p));const doneTasks=taskOccurrenceCount(data.tasks,start,date,t=>t.pillar===p);const journals=data.journals.filter(j=>j.pillar===p&&recent(j.date)).length;const score=evidence.find(row=>row.pillar===p)?.score??0;
     let label="Not enough recent data";let tone:"up"|"down"|"steady"|"quiet"="quiet";
     if(p==="Financial"&&finance.monthlyBudget>0){label=finance.health;tone=finance.health.includes("Risk")||finance.health.includes("Above")?"down":"up";}
     else if(p==="Physical"&&data.workoutLogs.some(l=>recent(l.date))){const active=new Set(data.workoutLogs.filter(l=>recent(l.date)).map(l=>l.date)).size;label=`${active} active workout ${active===1?"day":"days"}`;tone=active>=3?"up":"steady";}
@@ -28,7 +29,7 @@ export function InsightsWorkspace() {
   });
   const changes=currentPillars.filter(p=>current[p]&&previous[p]).map(p=>({pillar:p,change:current[p]-previous[p]})).sort((a,b)=>b.change-a.change);
   const positives=summaries.filter(s=>s.tone==="up").slice(0,2);const attention=summaries.filter(s=>s.tone==="down"||s.label==="Not enough recent data").slice(0,2);
-  const focusMinutes=Math.round(data.focus.filter(f=>recent(f.date)).reduce((s,f)=>s+f.seconds,0)/60);const completedGoals=data.goals.filter(g=>!g.archived&&g.progress===100).length;const activeDays=new Set([...data.tasks.filter(t=>t.done&&recent(t.date)).map(t=>t.date),...data.workoutLogs.filter(l=>recent(l.date)).map(l=>l.date),...data.journals.filter(j=>recent(j.date)).map(j=>j.date)]).size;
+  const focusMinutes=Math.round(data.focus.filter(f=>recent(f.date)).reduce((s,f)=>s+f.seconds,0)/60);const completedGoals=data.goals.filter(g=>!g.archived&&g.progress===100).length;const activeDays=new Set([...completedTaskDays(data.tasks,start,date),...data.workoutLogs.filter(l=>recent(l.date)).map(l=>l.date),...data.journals.filter(j=>recent(j.date)).map(j=>j.date)]).size;
   const observations=[
     finance.monthlyBudget>0&&finance.health.includes("Risk")?`Financial spending is above plan for the current pay cycle.`:"",
     data.workoutLogs.filter(l=>recent(l.date)).length>=3?`Workout consistency is visible in the selected period.`:"",

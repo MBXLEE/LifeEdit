@@ -162,10 +162,6 @@ function visionPhrase(item: Pick<BoardItem, "phrase" | "quote">) {
   return (item.phrase ?? item.quote ?? "").trim();
 }
 
-function hasVisual(item: Pick<BoardItem, "images" | "url" | "phrase" | "quote">) {
-  return visionImages(item).length > 0 || visionPhrase(item).length > 0;
-}
-
 function linkedProgress(item: BoardItem, data: LifeData) {
   const goal = item.goalId ? data.goals.find(g => g.id === item.goalId) : null;
   return goal ? goal.progress : itemProgress(item);
@@ -436,7 +432,7 @@ export function VisionWorkspace({ goalsView }: { goalsView?: ReactNode }) {
       <Field label="Currency"><select value={draft.currency ?? data.currency} onChange={e => setDraft({ ...draft, currency: e.target.value })}>{data.currencies.map(c => <option key={c.code} value={c.code}>{c.code} · {c.name}</option>)}</select></Field>
       <Field label="Future goal"><select value={draft.goalId ?? ""} onChange={e => setDraft({ ...draft, goalId: e.target.value })}><option value="">No linked goal</option>{data.goals.filter(g => !g.archived || g.id === draft.goalId).map(g => <option key={g.id} value={g.id}>{g.title}</option>)}</select></Field>
       {!draft.goalId && <label className="le-check-row"><input type="checkbox" checked={Boolean(draft.makeGoal)} onChange={e => setDraft({ ...draft, makeGoal: e.target.checked })} />Make this a Goal</label>}
-      <Field label="AI dream coach note"><textarea rows={3} value={draft.coachNote ?? ""} onChange={e => setDraft({ ...draft, coachNote: e.target.value })} placeholder="At your current pace, you will reach this goal early." /></Field>
+      <Field label="Dream coach note"><textarea rows={3} value={draft.coachNote ?? ""} onChange={e => setDraft({ ...draft, coachNote: e.target.value })} placeholder="Add a supportive reminder or next step for this vision." /></Field>
       <MultiImageUpload values={visionImages(draft)} onBusy={setUploading} onChange={images => setDraft(d => d ? { ...d, images, url: images[0] ?? "" } : d)} />
       <Field label="Or image URL (https)"><input type="url" pattern="https://.*" value={draft.url.startsWith("https://") ? draft.url : ""} onChange={e => { const next = e.target.value; setDraft({ ...draft, url: next, images: next ? [next, ...visionImages(draft).filter(source => source !== draft.url)].slice(0, 6) : visionImages(draft).filter(source => source !== draft.url) }); }} /></Field>
       {saveError && <p role="alert" className="le-error">{saveError}</p>}

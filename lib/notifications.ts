@@ -3,6 +3,7 @@ import type { LifeData, Task } from "./life-store";
 import { commitmentComplete, dayOfReset, dueOnDay } from "./reset-progress";
 import { addDateDays, dateInZone, wallTime } from "./notification-time";
 import { nextReviewDate } from "./refinements";
+import { taskDoneOn, taskOccursOn } from "./planner";
 
 export type NotificationCategory = "focus" | "planner" | "overdue" | "resets" | "habits" | "journal" | "finance" | "goals" | "reviews";
 export type NotificationSettings = {
@@ -22,15 +23,7 @@ export function notificationSettings(raw?: Partial<NotificationSettings>): Notif
   const base = defaultNotificationSettings();
   return { ...base, ...raw, categories: { ...base.categories, ...raw?.categories }, reminderTimes: { ...base.reminderTimes, ...raw?.reminderTimes } };
 }
-export function taskOccursOn(task: Task, day: string) {
-  if (!task.recurrence || task.recurrence === "none") return task.date === day;
-  if (day < task.date || (task.recurrenceEnd && day > task.recurrenceEnd)) return false;
-  const weekday = new Date(`${day}T12:00:00Z`).getUTCDay();
-  return task.recurrence === "daily" || (task.recurrence === "weekdays" ? weekday > 0 && weekday < 6 : weekday === new Date(`${task.date}T12:00:00Z`).getUTCDay());
-}
-export function taskDoneOn(task: Task, day: string) {
-  return task.recurrence && task.recurrence !== "none" ? Boolean(task.completedDates?.includes(day)) : task.done;
-}
+export { taskOccursOn, taskDoneOn } from "./planner";
 export function focusNotifications(plan: FocusPlan | null, now = Date.now()): ScheduledNotification[] {
   if (!plan) return [];
   const rows: ScheduledNotification[] = [];

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Pause, Play, RotateCcw } from "lucide-react";
 import { useLife, uid, today } from "@/lib/life-store";
 import { plannedSecondsLeft } from "@/lib/life-domain";
-import { Button, Card, Field, Heading, Metric, Progress, RecordActions } from "./workspace-ui";
+import { Button, Card, Field, Heading, Metric, Progress } from "./workspace-ui";
 
 export function FocusWorkspace() {
   const { data, update } = useLife(); const plan = data.focusPlan;
