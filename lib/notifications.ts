@@ -4,19 +4,20 @@ import { commitmentComplete, dayOfReset, dueOnDay } from "./reset-progress";
 import { addDateDays, dateInZone, wallTime } from "./notification-time";
 import { nextReviewDate } from "./refinements";
 import { taskDoneOn, taskOccursOn } from "./planner";
+import { planOccurrence } from "./fitness-domain";
 
-export type NotificationCategory = "focus" | "planner" | "overdue" | "resets" | "habits" | "journal" | "finance" | "goals" | "reviews";
+export type NotificationCategory = "focus" | "planner" | "overdue" | "resets" | "habits" | "journal" | "finance" | "goals" | "reviews" | "fitness";
 export type NotificationSettings = {
   enabled: boolean;
   categories: Record<NotificationCategory, boolean>;
-  reminderTimes: { plannerLeadMinutes: number; plannerSummaryTime: string; resetTime: string; habitTime: string; journalTime: string; financeTime: string; reviewTime: string };
+  reminderTimes: { plannerLeadMinutes: number; plannerSummaryTime: string; resetTime: string; habitTime: string; journalTime: string; financeTime: string; reviewTime: string; fitnessTime: string };
   permissionAsked: boolean;
 };
 export type ScheduledNotification = { id: string; category: NotificationCategory; title: string; body: string; at: number; url: string; expiresAt?: number };
 export const defaultNotificationSettings = (): NotificationSettings => ({
   enabled: false,
-  categories: { focus: true, planner: true, overdue: false, resets: true, habits: false, journal: false, finance: false, goals: false, reviews: false },
-  reminderTimes: { plannerLeadMinutes: 15, plannerSummaryTime: "19:00", resetTime: "19:00", habitTime: "19:30", journalTime: "20:30", financeTime: "09:00", reviewTime: "18:00" },
+  categories: { focus: true, planner: true, overdue: false, resets: true, habits: false, journal: false, finance: false, goals: false, reviews: false, fitness: true },
+  reminderTimes: { plannerLeadMinutes: 15, plannerSummaryTime: "19:00", resetTime: "19:00", habitTime: "19:30", journalTime: "20:30", financeTime: "09:00", reviewTime: "18:00", fitnessTime: "08:00" },
   permissionAsked: false
 });
 export function notificationSettings(raw?: Partial<NotificationSettings>): NotificationSettings {
@@ -105,10 +106,25 @@ export function wellbeingNotifications(data: LifeData, settings: NotificationSet
   }
   return rows;
 }
+export function fitnessNotifications(data: LifeData, settings: NotificationSettings, now = Date.now(), timeZone?: string): ScheduledNotification[] {
+  if (!settings.categories.fitness || !data.fitnessSettings?.reminders) return [];
+  const today = dateInZone(now, timeZone), rows: ScheduledNotification[] = [];
+  for (let offset = 0; offset <= 7; offset++) {
+    const day = addDateDays(today, offset);
+    if (data.workoutLogs.some(log => log.date === day)) continue;
+    const explicit = data.scheduledWorkouts.find(item => item.date === day);
+    const planned = data.fitnessPlans.find(plan => planOccurrence(plan, day) && !planOccurrence(plan, day)?.rest);
+    const planDay = planned ? planOccurrence(planned, day) : null;
+    if (explicit?.rest || explicit?.completed || (!explicit && !planDay && !(data.fitnessSettings.workoutDays || []).includes(new Date(`${day}T12:00:00`).getDay()))) continue;
+    const workout = data.workouts.find(item => item.id === (explicit?.workoutId || planDay?.workoutId));
+    rows.push({ id: `fitness:${day}:${explicit?.id || planned?.id || "preferred"}`, category: "fitness", title: "A little time to move", body: workout ? `${workout.name} is on your training week today. Move when it works for you.` : "Today is one of your preferred workout days. Make it your own.", at: wallTime(day, settings.reminderTimes.fitnessTime, timeZone), url: `/fitness?tab=Plans` });
+  }
+  return rows;
+}
 export function buildNotificationSchedule(data: LifeData, now = Date.now(), timeZone?: string) {
   const settings = notificationSettings(data.notificationSettings);
   if (!settings.enabled) return [];
-  const rows = [...(settings.categories.focus ? focusNotifications(data.focusPlan,now) : []), ...plannerNotifications(data.tasks ?? [],settings,now,timeZone), ...resetNotifications(data,settings,now,timeZone), ...wellbeingNotifications(data,settings,now,timeZone)];
+  const rows = [...(settings.categories.focus ? focusNotifications(data.focusPlan,now) : []), ...plannerNotifications(data.tasks ?? [],settings,now,timeZone), ...resetNotifications(data,settings,now,timeZone), ...wellbeingNotifications(data,settings,now,timeZone), ...fitnessNotifications(data,settings,now,timeZone)];
   const unique = [...new Map(rows.filter(r => Number.isFinite(r.at) && (r.expiresAt ?? r.at+90_000) > now && r.at < now+8*86400_000).map(r => [r.id,{ ...r, expiresAt: r.expiresAt ?? r.at+90_000 }])).values()];
   const buckets = new Map<string,ScheduledNotification[]>();
   for (const item of unique) {
@@ -118,7 +134,7 @@ export function buildNotificationSchedule(data: LifeData, now = Date.now(), time
   return [...buckets.entries()].map(([key,items]) => {
     if (items.length === 1) return items[0];
     const first = items[0];
-    const url = first.category === "planner" ? `/planner?date=${dateInZone(first.at,timeZone)}` : first.category === "resets" ? "/life-reset?view=resets" : first.category === "goals" ? "/life-edit?view=goals" : "/finance?view=transactions";
+    const url = first.category === "planner" ? `/planner?date=${dateInZone(first.at,timeZone)}` : first.category === "resets" ? "/life-reset?view=resets" : first.category === "goals" ? "/life-edit?view=goals" : first.category === "fitness" ? "/fitness?tab=Plans" : "/finance?view=transactions";
     return { ...first, id:`group:${key}`, title:first.category === "planner" ? `${items.length} plans coming up` : first.category === "resets" ? "Your Reset check-in" : `${items.length} reminders for today`, body:items.slice(0,3).map(n => n.body).join(" ") + (items.length > 3 ? ` And ${items.length-3} more.` : ""), url };
   }).sort((a,b) => a.at-b.at);
 }

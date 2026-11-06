@@ -2,6 +2,7 @@ export const workerSource = String.raw`
 const SHELL = 'lifeedit-shell-' + MODE + '-' + VERSION;
 const ASSETS = 'lifeedit-assets-v2';
 const routes = new Set(['/life-reset','/dashboard','/planner','/focus','/life-edit','/journal','/insights','/finance','/budget','/fitness','/habits','/quit-habits','/social','/spiritual','/settings','/onboarding','/login']);
+const isDocumentRoute = path => routes.has(path) || /^\/social\/[^/]+$/.test(path);
 self.addEventListener('install', event => {
   self.skipWaiting();
   if (DEVELOPMENT) return;
@@ -41,10 +42,10 @@ self.addEventListener('fetch', event => {
       try {
         const response = await fetch(request);
         // Only demo shells may be reopened offline. Never cache authenticated documents.
-        if (MODE === 'DEMO' && response.headers.get('X-Life-Edit-Mode') === 'DEMO' && routes.has(url.pathname) && response.ok && !response.redirected) await cache.put(url.pathname, response.clone());
+        if (MODE === 'DEMO' && response.headers.get('X-Life-Edit-Mode') === 'DEMO' && isDocumentRoute(url.pathname) && response.ok && !response.redirected) await cache.put(url.pathname, response.clone());
         return response;
       } catch {
-        const saved = MODE === 'DEMO' && routes.has(url.pathname) ? await cache.match(url.pathname) : null;
+        const saved = MODE === 'DEMO' && isDocumentRoute(url.pathname) ? await cache.match(url.pathname) : null;
         return saved || await cache.match('/offline.html') || new Response('Connect to the internet and try again.', {status:503});
       }
     })());

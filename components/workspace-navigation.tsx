@@ -39,14 +39,14 @@ export function WorkspaceNavigation({ path, logout, children }: { path: string; 
     setCompact(next);
     try { localStorage.setItem("life-edit-sidebar", next ? "compact" : "expanded"); } catch { /* Keep the choice for this visit. */ }
   }
-  const current = workspaceLinks.find(link => link[1] === path)?.[0] || "Onboarding";
+  const current = path.startsWith("/social/") ? "Relationships" : workspaceLinks.find(link => link[1] === path)?.[0] || "Onboarding";
   return <div className="le-app" data-page={path.slice(1)} data-sidebar={compact === null ? "auto" : compact ? "compact" : "expanded"}>
     {mobileOpen && <button type="button" className="le-scrim" aria-label="Close navigation menu" onClick={() => setMobileOpen(false)} />}
     <aside className={`le-sidebar ${mobileOpen ? "is-open" : ""}`} aria-label="Main navigation" aria-hidden={!mobileOpen ? undefined : false}>
       <div className="le-sidebar-head"><Link href="/dashboard" className="le-brand" title="The Life Edit"><span>LE</span><div>The Life Edit<small>1% better every day</small></div></Link><button type="button" className="le-icon le-drawer-close" aria-label="Close navigation menu" onClick={() => setMobileOpen(false)}><X size={19}/></button></div>
       <nav aria-label="Main navigation">{workspaceLinks.map(([label, href, Icon], index) => <div key={href}>
         {(index === 0 || index === 7 || index === 14) && <p className="le-nav-group le-eyebrow">{index === 0 ? "Navigation" : index === 7 ? "Modules" : "Settings"}</p>}
-        <Link href={href as Route} title={label} aria-label={label} aria-current={path === href ? "page" : undefined} onClick={() => setMobileOpen(false)}><Icon size={19} /><span>{label}</span></Link>
+        <Link href={href as Route} title={label} aria-label={label} aria-current={path === href || (href === "/social" && path.startsWith("/social/")) ? "page" : undefined} onClick={() => setMobileOpen(false)}><Icon size={19} /><span>{label}</span></Link>
       </div>)}</nav>
       <div className="le-sidebar-footer"><Link href="/onboarding" title="Edit life assessment"><Pencil size={18}/><span>Edit life assessment</span></Link>
         {account ? <button onClick={logout} title="Log out"><LogOut size={18}/><span>Log out</span></button> : <Link href="/login" title="Log in / Create account"><LogOut size={18}/><span>Log in / Create account</span></Link>}

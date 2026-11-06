@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en-ZA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f3ed">
+  <title>The Life Edit · A visual concept</title>
+  <style>
+    :root {
+      --ink:#253143; --muted:#738092; --line:#e9e5df; --paper:#fffdfa;
+      --cream:#f7f3ed; --rose:#eabdc0; --rose-wash:#f9e9e9; --blue:#728dad;
+      --blue-wash:#e6eef8; --lilac:#b5a8cf; --lilac-wash:#f0ecf6;
+      --sage:#8fae91; --sage-wash:#e8f0e5; --butter:#f4e5ba;
+      --shadow:0 22px 70px rgba(48,60,71,.11); --soft-shadow:0 8px 30px rgba(48,60,71,.06);
+    }
+    * { box-sizing:border-box; }
+    html,body { min-height:100%; }
+    body { margin:0; color:var(--ink); background:radial-gradient(circle at 9% 15%,#f9e8e8 0 10%,transparent 32%),radial-gradient(circle at 92% 90%,#e7edf8 0 12%,transparent 35%),var(--cream); font:14px/1.5 "Segoe UI",Arial,sans-serif; }
+    button { font:inherit; }
+    button:focus-visible { outline:3px solid #78a5cb; outline-offset:3px; }
+    .display { font-family:Georgia,"Times New Roman",serif; font-weight:400; letter-spacing:-.055em; }
+    .hand { font-family:"Segoe Print","Comic Sans MS",cursive; }
+    .icon { width:19px; height:19px; flex:none; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .concept-heading { max-width:1440px; margin:24px auto 12px; padding:0 14px; display:flex; align-items:center; justify-content:space-between; gap:15px; color:#748197; font-size:11px; font-weight:750; letter-spacing:.15em; text-transform:uppercase; }
+    .concept-heading .right { display:flex; align-items:center; gap:8px; }
+    .concept-heading .dot { width:7px;height:7px;border-radius:50%;background:#9fbd9d;box-shadow:0 0 0 4px #e7efe2; }
+    .app { display:grid; grid-template-columns:224px minmax(0,1fr); width:min(1440px,calc(100% - 28px)); min-height:850px; margin:0 auto 28px; overflow:hidden; border:1px solid rgba(205,207,207,.7); border-radius:31px; background:var(--paper); box-shadow:var(--shadow); }
+    .sidebar { display:flex; flex-direction:column; min-width:0; padding:28px 15px 20px; border-right:1px solid #ece9e4; background:#fffcf8; }
+    .brand { display:flex; align-items:center; gap:10px; padding:0 10px; font:19px Georgia,serif; letter-spacing:-.05em; white-space:nowrap; }
+    .brand-mark { display:grid; place-items:center; width:37px; height:37px; border-radius:13px; background:var(--rose-wash); color:#cf8d96; font:29px/1 Georgia,serif; transform:rotate(-10deg); }
+    .brand small { display:block; margin-top:2px; color:#a7a4a4; font:9px/1.3 "Segoe UI",sans-serif; letter-spacing:.03em; }
+    .sidebar-label { margin:45px 10px 11px; color:#a2a5a9; font-size:9px; font-weight:800; letter-spacing:.17em; text-transform:uppercase; }
+    .side-nav { display:grid; gap:4px; }
+    .nav-button { position:relative; display:flex; align-items:center; gap:12px; width:100%; padding:11px 14px; border:0; border-radius:14px; background:transparent; color:#758197; text-align:left; cursor:pointer; font-size:12px; font-weight:700; transition:background .2s,color .2s,transform .2s; }
+    .nav-button:hover { background:#f5f4f1; transform:translateX(2px); }
+    .nav-button[aria-current="page"] { background:#eaf0f8; color:#4c6d8f; }
+    .nav-button[aria-current="page"]::before { content:""; position:absolute; left:-15px; top:10px; bottom:10px; width:3px; background:#7d9aba; border-radius:0 4px 4px 0; }
+    .nav-button .number { margin-left:auto; color:#abb6c3; font-size:10px; font-weight:700; }
+    .side-extra { margin:20px 10px 0; padding-top:17px; border-top:1px solid #eee9e2; }
+    .side-extra p { margin:0 0 8px; color:#9b9da1; font-size:9px; letter-spacing:.16em; font-weight:800; text-transform:uppercase; }
+    .side-extra span { display:block; padding:6px 0; color:#9098a5; font-size:11px; }
+    .side-bottom { position:relative; margin-top:auto; min-height:168px; padding:21px 15px 12px; border-radius:20px; overflow:hidden; background:#f8e9e6; }
+    .side-bottom .little-plant { position:absolute; right:-3px; bottom:-14px; color:#d6a19f; font:100px/1 Georgia,serif; transform:rotate(-17deg); opacity:.7; }
+    .side-bottom strong { position:relative; display:block; max-width:130px; font:19px/1.14 Georgia,serif; }
+    .side-bottom small { position:relative; display:block; max-width:130px; margin-top:9px; color:#957f83; font-size:10px; line-height:1.5; }
+    .workspace { min-width:0; background:#fdfcf9; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; height:76px; padding:0 clamp(25px,3vw,48px); border-bottom:1px solid #f0ede8; background:#fffefa; }
+    .crumb { display:flex; align-items:center; gap:11px; color:#9ba4aa; font-size:11px; font-weight:700; }
+    .crumb .current { color:#536a83; }
+    .top-right { display:flex; align-items:center; gap:17px; color:#84909a; font-size:11px; }
+    .weather { display:flex; align-items:center; gap:6px; }
+    .weather span { color:#e4ba65; font-size:18px; }
+    .avatar { display:grid; place-items:center; width:35px; height:35px; border-radius:50%; background:#e9dbed; color:#7f668e; font:17px Georgia,serif; }
+    .mobile-nav { display:none; }
+    .view { max-width:1180px; min-height:770px; margin:auto; padding:37px clamp(25px,3vw,48px) 44px; animation:arrive .35s ease both; }
+    .view[hidden] { display:none!important; }
+    @keyframes arrive { from { opacity:.4; transform:translateY(9px); } to { opacity:1; transform:none; } }
+    .eyebrow { color:#8498af; font-size:10px; font-weight:800; letter-spacing:.19em; text-transform:uppercase; }
+    .view-head { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:26px; }
+    .view-head h1 { margin:8px 0 9px; font-size:clamp(37px,4vw,58px); line-height:1.05; }
+    .view-head p { margin:0; color:var(--muted); font-size:13px; }
+    .head-sticker { flex:none; margin-top:8px; padding:10px 16px; transform:rotate(5deg); border-radius:11px; background:#fff0c9; color:#9b7b35; box-shadow:0 4px 12px rgba(112,96,51,.08); font:13px "Segoe Print",cursive; }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:9px; min-height:41px; padding:10px 15px; border:0; border-radius:12px; background:#26354b; color:#fff; cursor:pointer; font-size:11px; font-weight:800; white-space:nowrap; box-shadow:0 6px 14px rgba(31,47,65,.12); transition:transform .2s,box-shadow .2s; }
+    .btn:hover { transform:translateY(-2px); box-shadow:0 10px 20px rgba(31,47,65,.16); }
+    .btn.alt { background:white; color:#567392; border:1px solid #dce5ee; box-shadow:none; }
+    .btn.rose { background:#a96d79; }
+    .quiet-link { border:0; background:none; padding:5px 0; color:#6686a4; cursor:pointer; font-size:11px; font-weight:750; }
+    .card { background:#fff; border:1px solid #eeeae4; border-radius:22px; box-shadow:var(--soft-shadow); }
+    .tiny { color:#a7a6a3; font-size:10px; }
+
+    /* Today */
+    .today-grid { display:grid; grid-template-columns:minmax(0,1.56fr) minmax(250px,.84fr); gap:18px; }
+    .today-main,.today-rail { display:grid; align-content:start; gap:17px; min-width:0; }
+    .spotlight { position:relative; min-height:278px; display:flex; overflow:hidden; border-radius:26px; background:linear-gradient(115deg,#e8e5f4 0%,#e8ecf7 55%,#f5e7e1 100%); }
+    .spotlight::before { content:""; position:absolute; width:320px;height:320px; right:-105px; top:-110px; border-radius:50%; border:29px solid rgba(255,255,255,.42); }
+    .spotlight-content { position:relative; z-index:1; max-width:420px; padding:31px 32px; }
+    .spotlight .eyebrow { color:#8979a8; }
+    .spotlight h2 { margin:12px 0 8px; max-width:380px; font:clamp(30px,3.1vw,42px)/1.06 Georgia,serif; letter-spacing:-.055em; }
+    .spotlight p { max-width:340px; margin:0 0 19px; color:#777b92; font-size:12px; }
+    .spotlight-art { position:absolute; right:-17px; bottom:-20px; width:260px; height:260px; opacity:.94; }
+    .tag { display:inline-flex; align-items:center; gap:6px; width:max-content; padding:6px 9px; border-radius:99px; background:rgba(255,255,255,.65); color:#746e87; font-size:10px; font-weight:700; }
+    .spotlight .btn { margin-top:15px; background:#6c7095; }
+    .schedule { padding:21px 23px 15px; }
+    .card-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:11px; }
+    .card-head h2 { margin:0; font:23px Georgia,serif; letter-spacing:-.04em; }
+    .time-row { display:grid; grid-template-columns:56px 25px minmax(0,1fr) auto; align-items:center; gap:11px; min-height:60px; border-top:1px solid #f1eee9; }
+    .time-row time { color:#a1aab4; font-size:10px; font-weight:800; }
+    .time-row .line-icon { display:grid; place-items:center; width:24px; height:24px; border-radius:8px; color:#7b9bb7; background:#eaf1f7; font-size:12px; }
+    .time-row .line-icon.done { color:#66976f; background:#e8f1e5; }
+    .time-row strong { display:block; font-size:11px; }
+    .time-row small { display:block; margin-top:2px; color:#9da7ae; font-size:9px; }
+    .time-row .duration { color:#a1aab4; font-size:9px; }
+    .progress-card { display:flex; align-items:center; gap:18px; min-height:135px; padding:21px; background:#fff; }
+    .ring { display:grid; place-items:center; flex:none; width:83px; height:83px; border-radius:50%; background:conic-gradient(#87aa92 0 62%,#e5ece7 62% 100%); }
+    .ring::before { content:""; grid-area:1/1; width:66px;height:66px;border-radius:50%;background:#fff; }
+    .ring b { grid-area:1/1; z-index:1; font:19px Georgia,serif; }
+    .progress-card h2 { margin:0 0 4px; font:21px Georgia,serif; }
+    .progress-card p { margin:0; color:#8c98a1; font-size:10px; }
+    .progress-card .mini-dots { display:flex; gap:4px; margin-top:10px; }
+    .mini-dots i { width:17px;height:5px;border-radius:9px;background:#85a991; }
+    .mini-dots i.off { background:#e4e9e5; }
+    .garden { position:relative; min-height:234px; overflow:hidden; padding:22px; background:#e8f0e6; border-color:#e1ebdf; }
+    .garden .eyebrow { color:#718f73; }
+    .garden h2 { max-width:160px; margin:8px 0 0; font:25px/1.08 Georgia,serif; letter-spacing:-.04em; }
+    .garden p { max-width:160px; margin:9px 0 0; color:#738c74; font-size:10px; }
+    .garden .growth { position:absolute; left:22px; bottom:20px; display:flex; align-items:center; gap:8px; color:#699071; font-size:10px; font-weight:800; }
+    .garden .growth-line { width:68px; height:5px; border-radius:6px; background:linear-gradient(to right,#7fa38a 0 38%,#cedfce 38%); }
+    .garden-flower { position:absolute; right:10px; bottom:-10px; width:132px; height:194px; }
+    .journal-nudge { display:flex; align-items:center; gap:14px; padding:17px 20px; background:#fbefed; border-color:#f6e5e3; }
+    .journal-nudge .doodle { color:#d99a9d; font:38px Georgia,serif; line-height:1; }
+    .journal-nudge strong { display:block; font:18px Georgia,serif; }
+    .journal-nudge p { margin:2px 0 0; color:#a68e90; font-size:10px; }
+    .today-foot { display:flex; align-items:center; gap:10px; margin-top:18px; color:#a3a4a4; font:14px "Segoe Print",cursive; }
+    .today-foot::before { content:"↳"; color:#b89ca9; font:28px Georgia,serif; }
+
+    /* Begin */
+    .begin-grid { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(260px,.65fr); gap:19px; }
+    .begin-form { padding:28px; }
+    .step-rail { display:flex; align-items:center; gap:8px; margin-bottom:31px; }
+    .step-rail i { height:5px; flex:1; border-radius:5px; background:#ece8e7; }
+    .step-rail i.active { background:#d79ca5; }
+    .begin-form h2 { margin:0 0 7px; font:33px/1.1 Georgia,serif; }
+    .begin-form > p { margin:0 0 24px; color:var(--muted); font-size:12px; }
+    .area-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .area { position:relative; min-height:115px; padding:16px; border:1px solid #eae7e4; border-radius:17px; background:#fff; }
+    .area.selected { border:2px solid #aabdd4; background:#f0f4fa; }
+    .area .area-icon { display:grid; place-items:center; width:32px;height:32px;border-radius:10px;background:#f2ebec;color:#be8a95;font:20px Georgia,serif; }
+    .area:nth-child(2) .area-icon { background:#e3ecf5;color:#6d8eac; }
+    .area:nth-child(3) .area-icon { background:#edf0e2;color:#849c71; }
+    .area:nth-child(4) .area-icon { background:#f7ecdc;color:#bc9658; }
+    .area strong { display:block; margin-top:9px; font-size:12px; }
+    .area small { color:#a5a7ad; font-size:10px; }
+    .area .chosen { position:absolute; right:13px; top:13px; color:#7192ae; font-size:14px; }
+    .begin-goal { margin-top:20px; padding:16px 18px; border-radius:14px; background:#fbf9f6; border:1px dashed #d9d3cc; }
+    .begin-goal .eyebrow { color:#a3968e; }
+    .begin-goal p { margin:6px 0 0; font:19px Georgia,serif; }
+    .begin-actions { display:flex; align-items:center; justify-content:space-between; gap:15px; margin-top:20px; }
+    .begin-actions small { color:#9a9fa7; font-size:10px; }
+    .begin-aside { position:relative; display:flex; flex-direction:column; justify-content:space-between; min-height:517px; padding:28px; overflow:hidden; background:linear-gradient(160deg,#f8e8e9,#f9f1e8); }
+    .begin-aside .hand { position:relative; z-index:1; color:#a27782; font-size:18px; line-height:1.4; transform:rotate(-4deg); }
+    .begin-aside .flower-giant { position:absolute; right:-35px; top:95px; color:#e2b7b5; font:270px/.9 Georgia,serif; transform:rotate(-20deg); }
+    .begin-aside .path-list { position:relative; z-index:1; display:grid; gap:13px; padding:18px; border-radius:17px; background:rgba(255,255,255,.73); }
+    .path-list div { display:flex; align-items:center; gap:9px; font-size:11px; font-weight:700; }
+    .path-list i { display:grid; place-items:center; width:23px;height:23px;border-radius:50%;background:#f0d4d6;color:#ab717c;font-size:10px;font-style:normal; }
+
+    /* Goal */
+    .goal-grid { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(260px,.7fr); gap:18px; }
+    .north-star { position:relative; min-height:260px; padding:29px 31px; overflow:hidden; background:#e9e8f3; }
+    .north-star h2 { position:relative; z-index:1; max-width:550px; margin:17px 0 10px; font:clamp(31px,3.1vw,43px)/1.09 Georgia,serif; letter-spacing:-.055em; }
+    .north-star p { position:relative; z-index:1; max-width:450px; margin:0; color:#827e99; font-size:12px; }
+    .north-star .label { position:relative; z-index:1; display:inline-block; margin-top:28px; padding:7px 10px; border-radius:20px; background:rgba(255,255,255,.6); color:#817696; font-size:10px; font-weight:750; }
+    .north-star .star-art { position:absolute; right:15px; top:20px; color:#c4b9dc; font:190px Georgia,serif; transform:rotate(-12deg); }
+    .goal-action { padding:22px 24px; }
+    .goal-action h2,.milestone-card h2 { margin:0 0 13px; font:22px Georgia,serif; }
+    .action-line { display:flex; align-items:center; gap:10px; padding:11px 0; border-top:1px solid #f0ede9; font-size:11px; }
+    .action-line .square { display:grid; place-items:center; width:17px;height:17px;border-radius:5px;border:1.5px solid #b9c8d5;color:#fff; }
+    .action-line .square.checked { background:#8dab94;border-color:#8dab94; }
+    .action-line em { margin-left:auto; color:#a7adb3; font-size:9px; font-style:normal; }
+    .goal-progress { padding:25px; background:#f8f1e8; }
+    .goal-progress h2 { margin:0; font:22px Georgia,serif; }
+    .goal-progress .big-number { display:block; margin:14px 0 2px; font:62px/.95 Georgia,serif; letter-spacing:-.07em; color:#9c7e68; }
+    .goal-progress p { color:#9a8a7c; font-size:11px; }
+    .progress-bar { width:100%; height:7px; border-radius:8px; background:#e7dacc; overflow:hidden; }
+    .progress-bar span { display:block; height:100%; width:38%; border-radius:8px; background:#b9947b; }
+    .milestone-card { position:relative; min-height:218px; padding:24px; overflow:hidden; background:#e9f1e7; }
+    .milestone-card p { position:relative; z-index:1; max-width:160px; margin:0; color:#7b947e; font-size:11px; }
+    .milestone-card .seal { position:absolute; right:-15px; bottom:-36px; width:153px;height:153px;border:19px solid #d0e0cd;border-radius:50%; display:grid;place-items:center; color:#a6c0a5;font:75px Georgia,serif; }
+
+    /* Planner */
+    .planner-top { display:flex; align-items:center; justify-content:space-between; gap:15px; margin-bottom:16px; }
+    .planner-top h2 { margin:0; font:25px Georgia,serif; }
+    .week-days { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; margin-bottom:18px; }
+    .day { min-height:107px; padding:15px; border:1px solid #e9e7e3; border-radius:17px; background:#fff; }
+    .day.active { border-color:#b8c9dc; background:#eaf0f8; }
+    .day span { display:block; color:#9da8ae; font-size:10px; font-weight:800; text-transform:uppercase; }
+    .day strong { display:block; margin-top:6px; font:25px Georgia,serif; }
+    .day .mark { display:block; width:24px;height:5px;margin-top:13px;border-radius:4px;background:#d7e4d4; }
+    .day.active .mark { width:46px;background:#8faac6; }
+    .planner-grid { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(260px,.65fr); gap:18px; }
+    .agenda { padding:24px 24px 18px; }
+    .agenda h2 { margin:0 0 17px; font:25px Georgia,serif; }
+    .agenda-row { display:grid; grid-template-columns:60px 4px minmax(0,1fr); gap:15px; min-height:84px; }
+    .agenda-row time { padding-top:3px; color:#9ca9b0; font-size:11px; font-weight:750; }
+    .agenda-row i { position:relative; width:4px; border-radius:5px; background:#d5dfe9; }
+    .agenda-row:nth-of-type(3) i { background:#b4accf; }
+    .agenda-row:nth-of-type(4) i { background:#cfddb9; }
+    .agenda-row strong { display:block; font-size:12px; }
+    .agenda-row small { color:#a4aab1; font-size:10px; }
+    .planned-focus { position:relative; min-height:345px; padding:24px; overflow:hidden; background:#f7ebee; }
+    .planned-focus h2 { margin:12px 0 8px; max-width:240px; font:29px/1.11 Georgia,serif; }
+    .planned-focus p { max-width:200px; color:#a2818e; font-size:11px; }
+    .planned-focus .button-holder { position:absolute; left:24px; bottom:24px; z-index:1; }
+    .planned-focus .orbit { position:absolute; width:190px;height:190px;right:-46px;bottom:-42px;border:27px solid #f0ced6;border-radius:50%; }
+    .planned-focus .orbit::after { content:"✿";position:absolute;left:-42px;top:-55px;color:#dca9b5;font:76px Georgia,serif; }
+
+    /* Review */
+    .review-grid { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(270px,.75fr); gap:18px; }
+    .review-left,.review-right { display:grid; align-content:start; gap:17px; }
+    .review-stat { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .stat-card { min-height:150px; padding:20px; background:#e9f0f7; }
+    .stat-card.green { background:#e8f0e6; }
+    .stat-card strong { display:block; margin-top:13px; font:45px/.95 Georgia,serif; letter-spacing:-.06em; }
+    .stat-card p { margin:7px 0 0; color:#8a98a6; font-size:10px; }
+    .review-chart { padding:22px; }
+    .review-chart h2 { margin:0 0 4px; font:22px Georgia,serif; }
+    .review-chart p { margin:0; color:#a5adb5; font-size:10px; }
+    .bars { display:flex; align-items:flex-end; justify-content:space-around; height:158px; margin:20px 5px 3px; padding:0 0 10px; border-bottom:1px solid #e4e8eb; }
+    .bar-wrap { display:flex; flex-direction:column; align-items:center; gap:7px; width:35px; }
+    .bar { width:21px; border-radius:8px 8px 3px 3px; background:#d9d2e5; }
+    .bar.focus { background:#ac9cc9; }
+    .bar-wrap span { color:#a2a9af; font-size:9px; }
+    .reflection-card { padding:24px; }
+    .reflection-card h2 { margin:0 0 18px; font:25px Georgia,serif; }
+    .question { padding:13px 0; border-top:1px solid #f0ede9; }
+    .question strong { font-size:11px; }
+    .question p { margin:5px 0 0; color:#a8adb2; font-size:10px; }
+    .next-card { min-height:183px; padding:22px; background:#f7ede3; }
+    .next-card h2 { margin:10px 0 5px; font:25px Georgia,serif; }
+    .next-card p { margin:0 0 14px; color:#9b8776; font-size:10px; }
+
+    .prototype-footer { max-width:1440px; margin:0 auto 25px; padding:0 14px; display:flex; justify-content:space-between; color:#9a9da0; font-size:10px; }
+    @media (max-width:1100px) { .app { grid-template-columns:76px minmax(0,1fr); } .sidebar { padding-inline:9px; } .brand { padding:0 9px; } .sidebar .brand span:last-child,.sidebar-label,.nav-button span:not(.icon-wrap),.nav-button .number,.side-extra,.side-bottom { display:none; } .nav-button { justify-content:center; padding:12px; } .nav-button[aria-current="page"]::before { left:-9px; } .spotlight-art { opacity:.6; } }
+    @media (max-width:780px) { .app { grid-template-columns:1fr; width:calc(100% - 16px); border-radius:22px; } .sidebar { display:none; } .mobile-nav { display:flex; overflow:auto; gap:7px; padding:9px 15px; border-bottom:1px solid #ece9e4; background:#fffefa; scrollbar-width:none; } .mobile-nav::-webkit-scrollbar { display:none; } .mobile-nav .nav-button { width:auto; flex:none; justify-content:center; gap:7px; padding:9px 12px; border-radius:99px; font-size:11px; } .mobile-nav .nav-button[aria-current="page"]::before { display:none; } .mobile-nav .icon { width:15px;height:15px; } .topbar { height:63px; padding:0 21px; } .top-right .weather { display:none; } .view { padding:30px 22px 38px; min-height:0; } .today-grid,.begin-grid,.goal-grid,.planner-grid,.review-grid { grid-template-columns:1fr; } .today-rail { grid-template-columns:1fr 1fr; } .today-rail .journal-nudge { grid-column:1/-1; } .garden { min-height:210px; } .begin-aside { min-height:270px; } .begin-aside .flower-giant { top:-35px; } .begin-aside .path-list { max-width:350px; } .review-right { grid-template-columns:1fr 1fr; } }
+    @media (max-width:540px) { .concept-heading { margin-top:11px; font-size:8px; letter-spacing:.09em; } .concept-heading .right { display:none; } .app { margin-bottom:12px; } .topbar { padding-inline:16px; } .crumb { font-size:10px; } .mobile-nav { overflow:visible; gap:0; justify-content:space-between; padding:9px 4px; } .mobile-nav .nav-button { flex:1; min-width:0; gap:4px; padding:9px 3px; font-size:9px; white-space:nowrap; } .mobile-nav .icon { width:14px; height:14px; } .view { padding:27px 17px 34px; } .view-head { margin-bottom:21px; } .view-head h1 { font-size:40px; } #today-title span { display:none; } .view-head p { font-size:12px; } .head-sticker { display:none; } .spotlight { min-height:317px; } .spotlight-content { padding:27px 24px; } .spotlight h2 { max-width:310px; font-size:34px; } .spotlight-art { width:205px;height:205px;right:-35px;bottom:-35px;opacity:.45; } .today-rail,.review-right { grid-template-columns:1fr; } .today-rail .journal-nudge { grid-column:auto; } .progress-card { min-height:115px; } .area-grid { gap:8px; } .area { padding:12px; } .begin-form { padding:19px; } .begin-aside { padding:22px; } .week-days { gap:5px; } .day { min-height:90px; padding:10px; border-radius:12px; } .day strong { font-size:22px; } .review-stat { gap:8px; } .stat-card { padding:17px; } .stat-card strong { font-size:38px; } .prototype-footer { display:block; padding-inline:18px; } }
+    @media (prefers-reduced-motion:reduce) { .view { animation:none; } .btn,.nav-button { transition:none; } }
+  </style>
+</head>
+<body>
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-7h6v7"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 2 1.9 7.1L21 11l-7.1 1.9L12 20l-1.9-7.1L3 11l7.1-1.9z"/><path d="m19 18 .5 1.5L21 20l-1.5.5L19 22l-.5-1.5L17 20l1.5-.5z"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 2v6M17 2v6M3 10h18"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 21c-2-2-5-3-9-3V4c4 0 7 1 9 3 2-2 5-3 9-3v14c-4 0-7 1-9 3zM12 7v14"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V11M10 20V6M16 20v-9M22 20V3M2 21h21"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></symbol>
+  </svg>
+  <div class="concept-heading"><span>The Life Edit / ideal flow</span><span class="right"><i class="dot"></i> visual concept only · sample content</span></div>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">✿</span><span>The Life Edit<small>grow gently, every day</small></span></div>
+      <div class="sidebar-label">Your little journey</div>
+      <nav class="side-nav" aria-label="Concept screens">
+        <button class="nav-button" data-go="begin" type="button"><svg class="icon"><use href="#i-spark"/></svg><span>Begin</span><span class="number">01</span></button>
+        <button class="nav-button" data-go="today" type="button" aria-current="page"><svg class="icon"><use href="#i-home"/></svg><span>Today</span><span class="number">02</span></button>
+        <button class="nav-button" data-go="goal" type="button"><svg class="icon"><use href="#i-target"/></svg><span>My Goal</span><span class="number">03</span></button>
+        <button class="nav-button" data-go="planner" type="button"><svg class="icon"><use href="#i-calendar"/></svg><span>This Week</span><span class="number">04</span></button>
+        <button class="nav-button" data-go="review" type="button"><svg class="icon"><use href="#i-chart"/></svg><span>Weekly Review</span><span class="number">05</span></button>
+      </nav>
+      <div class="side-extra"><p>Explore later</p><span>Journal · Focus · Fitness</span><span>Finance · Relationships · Reset</span></div>
+      <div class="side-bottom"><span class="little-plant" aria-hidden="true">✿</span><strong>One small step is enough.</strong><small>There is room to begin again tomorrow.</small></div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar"><div class="crumb"><span>The Life Edit</span><span>✦</span><span class="current" id="breadcrumb">Today</span></div><div class="top-right"><span class="weather"><span aria-hidden="true">☀</span> a good day to begin</span><span class="avatar">M</span></div></header>
+      <nav class="mobile-nav" aria-label="Concept screens on mobile">
+        <button class="nav-button" data-go="begin" type="button"><svg class="icon"><use href="#i-spark"/></svg>Begin</button>
+        <button class="nav-button" data-go="today" type="button" aria-current="page"><svg class="icon"><use href="#i-home"/></svg>Today</button>
+        <button class="nav-button" data-go="goal" type="button"><svg class="icon"><use href="#i-target"/></svg>My Goal</button>
+        <button class="nav-button" data-go="planner" type="button"><svg class="icon"><use href="#i-calendar"/></svg>This Week</button>
+        <button class="nav-button" data-go="review" type="button"><svg class="icon"><use href="#i-chart"/></svg>Review</button>
+      </nav>
+      <main>
+        <section class="view" data-view="today" aria-labelledby="today-title">
+          <div class="view-head"><div><span class="eyebrow">MONDAY, 2 NOVEMBER · YOUR TODAY</span><h1 class="display" id="today-title">Good morning, Maya <span style="color:#d7a3aa">✳</span></h1><p>A calmer life is built in little moments like these.</p></div><div class="head-sticker">you’ve got this ↗</div></div>
+          <div class="today-grid">
+            <div class="today-main">
+              <article class="spotlight"><div class="spotlight-content"><span class="eyebrow">YOUR ONE MEANINGFUL THING</span><h2>Make space for a calmer money week.</h2><p>Spend 15 minutes looking at what came in and went out. Just notice the pattern.</p><span class="tag">✦ Supports your goal: feel calmer about money</span><br><button class="btn" data-go="planner" type="button">Open in Planner <svg class="icon" style="width:14px;height:14px"><use href="#i-arrow"/></svg></button></div>
+                <svg class="spotlight-art" viewBox="0 0 260 260" aria-hidden="true"><ellipse cx="166" cy="239" rx="91" ry="20" fill="#d5cee6" opacity=".65"/><path d="M129 244c-5-62 3-103 27-152" fill="none" stroke="#739783" stroke-width="7" stroke-linecap="round"/><path d="M158 243c11-68 5-119-10-163" fill="none" stroke="#739783" stroke-width="7" stroke-linecap="round"/><ellipse cx="117" cy="157" rx="18" ry="39" transform="rotate(-47 117 157)" fill="#a8c7ad"/><ellipse cx="184" cy="174" rx="18" ry="42" transform="rotate(47 184 174)" fill="#a8c7ad"/><ellipse cx="111" cy="119" rx="16" ry="34" transform="rotate(-50 111 119)" fill="#8eb89b"/><g transform="translate(156 72)"><ellipse cx="0" cy="-35" rx="19" ry="31" fill="#f3c8b8"/><ellipse cx="31" cy="-15" rx="19" ry="31" transform="rotate(60 31 -15)" fill="#efb5b5"/><ellipse cx="30" cy="19" rx="19" ry="31" transform="rotate(120 30 19)" fill="#f3c8b8"/><ellipse cx="0" cy="36" rx="19" ry="31" fill="#efb5b5"/><ellipse cx="-30" cy="19" rx="19" ry="31" transform="rotate(60 -30 19)" fill="#f3c8b8"/><ellipse cx="-31" cy="-15" rx="19" ry="31" transform="rotate(120 -31 -15)" fill="#efb5b5"/><circle cx="0" cy="0" r="24" fill="#e8bd79"/><circle cx="-7" cy="-4" r="2" fill="#b18a59"/><circle cx="8" cy="4" r="2" fill="#b18a59"/></g><path d="m220 34 3 11 11 3-11 3-3 11-3-11-11-3 11-3z" fill="#fff9e7"/></svg>
+              </article>
+              <article class="card schedule"><div class="card-head"><h2>Your gentle plan</h2><button class="quiet-link" data-go="planner" type="button">Full week ↗</button></div><div class="time-row"><time>07:30</time><span class="line-icon done">✓</span><div><strong>Morning stretch</strong><small>A little care for your body</small></div><span class="duration">done</span></div><div class="time-row"><time>13:00</time><span class="line-icon">○</span><div><strong>Review this week’s spending</strong><small>Linked to your money goal</small></div><span class="duration">15 min</span></div><div class="time-row"><time>20:00</time><span class="line-icon">○</span><div><strong>Read a few pages</strong><small>Personal growth</small></div><span class="duration">10 min</span></div></article>
+            </div>
+            <div class="today-rail">
+              <article class="card progress-card"><div class="ring"><b>3/5</b></div><div><h2>Little wins add up</h2><p>Three gentle steps so far today.</p><div class="mini-dots"><i></i><i></i><i></i><i class="off"></i><i class="off"></i></div></div></article>
+              <article class="card garden"><span class="eyebrow">YOUR GOAL GARDEN</span><h2>Calmer with money</h2><p>Every completed step gives this goal a little more life.</p><div class="growth"><span class="growth-line"></span>38% growing</div><svg class="garden-flower" viewBox="0 0 132 194" aria-hidden="true"><path d="M71 190c-9-54-7-88 5-132" fill="none" stroke="#789a79" stroke-width="6" stroke-linecap="round"/><ellipse cx="47" cy="122" rx="17" ry="32" transform="rotate(-46 47 122)" fill="#a2c5a2"/><ellipse cx="97" cy="143" rx="14" ry="30" transform="rotate(43 97 143)" fill="#a2c5a2"/><g transform="translate(78 51)"><ellipse cx="0" cy="-25" rx="13" ry="23" fill="#f6cfca"/><ellipse cx="22" cy="-12" rx="13" ry="23" transform="rotate(60 22 -12)" fill="#ecc1c9"/><ellipse cx="22" cy="12" rx="13" ry="23" transform="rotate(120 22 12)" fill="#f6cfca"/><ellipse cx="0" cy="25" rx="13" ry="23" fill="#ecc1c9"/><ellipse cx="-22" cy="12" rx="13" ry="23" transform="rotate(60 -22 12)" fill="#f6cfca"/><ellipse cx="-22" cy="-12" rx="13" ry="23" transform="rotate(120 -22 -12)" fill="#ecc1c9"/><circle r="17" fill="#e5bc73"/></g></svg></article>
+              <article class="card journal-nudge"><span class="doodle" aria-hidden="true">✎</span><div><strong>A moment to reflect?</strong><p>Write one line about how today feels.</p></div></article>
+            </div>
+          </div><div class="today-foot">Your pace is the right pace.</div>
+        </section>
+
+        <section class="view" data-view="begin" aria-labelledby="begin-title" hidden>
+          <div class="view-head"><div><span class="eyebrow">01 / FIRST VISIT</span><h1 class="display" id="begin-title">A beginning made for you.</h1><p>Three gentle choices, then your first small action.</p></div><div class="head-sticker">start anywhere ✿</div></div>
+          <div class="begin-grid"><article class="card begin-form"><span class="eyebrow">STEP ONE OF THREE · YOUR FOCUS</span><div class="step-rail" aria-hidden="true"><i class="active"></i><i></i><i></i></div><h2>What would feel better in this season?</h2><p>Choose one area for now. The rest of your life can come with you.</p><div class="area-grid"><div class="area"><span class="area-icon">♡</span><strong>My wellbeing</strong><small>Feel a little more at ease</small></div><div class="area selected"><span class="area-icon">◌</span><span class="chosen">✓</span><strong>My finances</strong><small>Build a calmer money rhythm</small></div><div class="area"><span class="area-icon">✿</span><strong>My relationships</strong><small>Make room for people</small></div><div class="area"><span class="area-icon">✧</span><strong>My routines</strong><small>Find a steadier day</small></div></div><div class="begin-goal"><span class="eyebrow">IN YOUR OWN WORDS</span><p>“I want to feel calmer about money.”</p></div><div class="begin-actions"><small>You can change this at any time.</small><button class="btn rose" data-go="goal" type="button">See your goal <svg class="icon" style="width:14px;height:14px"><use href="#i-arrow"/></svg></button></div></article><aside class="card begin-aside"><span class="flower-giant" aria-hidden="true">✿</span><span class="hand">You don’t need to have it all figured out.</span><div class="path-list"><div><i>1</i> Pick what matters right now</div><div><i>2</i> Give it a simple goal</div><div><i>3</i> Plan one doable step</div></div></aside></div>
+        </section>
+
+        <section class="view" data-view="goal" aria-labelledby="goal-title" hidden>
+          <div class="view-head"><div><span class="eyebrow">03 / THE REASON BEHIND YOUR ACTIONS</span><h1 class="display" id="goal-title">Your north star.</h1><p>A goal you can return to, even on ordinary days.</p></div><div class="head-sticker">growing, not rushing ✧</div></div>
+          <div class="goal-grid"><div style="display:grid;gap:17px;align-content:start"><article class="card north-star"><span class="eyebrow">MY MONEY GOAL</span><h2>Feel calm and in control of my money.</h2><p>I want to understand my spending, build a small safety net, and make choices with less worry.</p><span class="label">✿ Financial wellbeing</span><span class="star-art" aria-hidden="true">✳</span></article><article class="card goal-action"><div class="card-head"><h2>Steps giving this goal life</h2><button class="quiet-link" data-go="planner" type="button">See my week ↗</button></div><div class="action-line"><span class="square checked">✓</span><span>List my regular bills</span><em>completed</em></div><div class="action-line"><span class="square checked">✓</span><span>Choose a small savings amount</span><em>completed</em></div><div class="action-line"><span class="square"></span><span>Review this week’s spending</span><em>today · 13:00</em></div></article></div><div style="display:grid;gap:17px;align-content:start"><article class="card goal-progress"><span class="eyebrow">ACTION-BASED PROGRESS</span><h2>You’re showing up.</h2><strong class="big-number">38%</strong><div class="progress-bar"><span></span></div><p>Based on the steps you have completed, with room for your own reflection.</p></article><article class="card milestone-card"><span class="eyebrow">A GENTLE MILESTONE</span><h2>Your next little win</h2><p>Finish one money check-in this week, then decide what comes next.</p><span class="seal" aria-hidden="true">✿</span></article></div></div>
+        </section>
+
+        <section class="view" data-view="planner" aria-labelledby="planner-title" hidden>
+          <div class="view-head"><div><span class="eyebrow">04 / GIVE YOUR GOAL SOME SPACE</span><h1 class="display" id="planner-title">A week with intention.</h1><p>Put the important thing somewhere it can actually happen.</p></div><div class="head-sticker">little by little ↗</div></div>
+          <div class="planner-top"><h2>This week in November</h2><button class="btn alt" data-go="today" type="button">Back to Today <svg class="icon" style="width:14px;height:14px"><use href="#i-arrow"/></svg></button></div><div class="week-days"><div class="day active"><span>Mon</span><strong>2</strong><i class="mark"></i></div><div class="day"><span>Tue</span><strong>3</strong><i class="mark"></i></div><div class="day"><span>Wed</span><strong>4</strong><i class="mark"></i></div><div class="day"><span>Thu</span><strong>5</strong><i class="mark"></i></div><div class="day"><span>Fri</span><strong>6</strong><i class="mark"></i></div></div><div class="planner-grid"><article class="card agenda"><h2>Monday, 2 November</h2><div class="agenda-row"><time>07:30</time><i></i><div><strong>Morning stretch</strong><small>10 minutes · Physical wellbeing</small></div></div><div class="agenda-row"><time>13:00</time><i></i><div><strong>Review this week’s spending</strong><small>15 minutes · Supports your money goal</small></div></div><div class="agenda-row"><time>20:00</time><i></i><div><strong>Read a few pages</strong><small>10 minutes · Personal growth</small></div></div></article><aside class="card planned-focus"><span class="eyebrow">YOUR GOAL IN THE CALENDAR</span><h2>This little block is how change begins.</h2><p>One specific action, given a real place in your day.</p><span class="orbit" aria-hidden="true"></span><div class="button-holder"><button class="btn rose" data-go="today" type="button">See it on Today ↗</button></div></aside></div>
+        </section>
+
+        <section class="view" data-view="review" aria-labelledby="review-title" hidden>
+          <div class="view-head"><div><span class="eyebrow">05 / A GENTLE WEEKLY CHECK-IN</span><h1 class="display" id="review-title">Look how far you came.</h1><p>Notice what happened, then choose one thing for next week.</p></div><div class="head-sticker">every step counts ♡</div></div>
+          <div class="review-grid"><div class="review-left"><div class="review-stat"><article class="card stat-card"><span class="eyebrow">STEPS YOU SHOWED UP FOR</span><strong>4 of 5</strong><p>One missed day did not erase the week.</p></article><article class="card stat-card green"><span class="eyebrow">GOAL ACTIONS COMPLETED</span><strong>2 ✿</strong><p>Small actions moved your goal forward.</p></article></div><article class="card review-chart"><h2>A little steadier each week</h2><p>Completed actions over the past six weeks</p><div class="bars" aria-label="A decorative bar chart showing a gradual increase"><div class="bar-wrap"><i class="bar" style="height:42px"></i><span>W1</span></div><div class="bar-wrap"><i class="bar" style="height:60px"></i><span>W2</span></div><div class="bar-wrap"><i class="bar" style="height:71px"></i><span>W3</span></div><div class="bar-wrap"><i class="bar" style="height:65px"></i><span>W4</span></div><div class="bar-wrap"><i class="bar" style="height:103px"></i><span>W5</span></div><div class="bar-wrap"><i class="bar focus" style="height:124px"></i><span>Now</span></div></div></article></div><div class="review-right"><article class="card reflection-card"><h2>A moment to reflect</h2><div class="question"><strong>What felt easier this week?</strong><p>Write a small win in your own words...</p></div><div class="question"><strong>What got in the way?</strong><p>Make a little room for honesty...</p></div><div class="question"><strong>What will help next week?</strong><p>One thoughtful adjustment is enough...</p></div></article><article class="card next-card"><span class="eyebrow">NEXT WEEK'S LITTLE STEP</span><h2>Keep the momentum gentle.</h2><p>Choose one action and give it a place in your week.</p><button class="btn" data-go="planner" type="button">Plan next week ↗</button></article></div></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <footer class="prototype-footer"><span>Click through the five screens to see the proposed journey.</span><span>Visual prototype only · no account, storage, or app logic</span></footer>
+  <script>
+    const labels = { begin:'Begin', today:'Today', goal:'My Goal', planner:'This Week', review:'Weekly Review' };
+    const sections = [...document.querySelectorAll('[data-view]')];
+    const controls = [...document.querySelectorAll('[data-go]')];
+    function show(name) {
+      if (!labels[name]) return;
+      for (const section of sections) section.hidden = section.dataset.view !== name;
+      for (const control of controls) {
+        if (control.classList.contains('nav-button')) {
+          if (control.dataset.go === name) control.setAttribute('aria-current','page');
+          else control.removeAttribute('aria-current');
+        }
+      }
+      document.getElementById('breadcrumb').textContent = labels[name];
+      document.querySelector('.workspace').scrollIntoView({ behavior:'smooth', block:'start' });
+    }
+    for (const control of controls) control.addEventListener('click', () => show(control.dataset.go));
+  </script>
+</body>
+</html>

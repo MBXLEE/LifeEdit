@@ -15,6 +15,7 @@ const categories: [NotificationCategory,string,string][] = [
   ["goals","Goals","A reminder on a goal’s chosen deadline."],
   ["finance","Finance reminders","Payments with a due date that you haven’t marked paid."],
   ["journal","Journal reminders","Choose a daily time to reflect. Skip days you’ve written."],
+  ["fitness","Gym Planner","A gentle note on your chosen training days. Enable this in Gym Planner too."],
   ["reviews","Life Reviews","Your scheduled review, when a review schedule is set."]
 ];
 export function NotificationPreferences() {
@@ -54,7 +55,7 @@ export function NotificationPreferences() {
     <div className="le-notification-categories mt-5">{categories.map(([key,label,description]) => <label key={key} className="le-notification-option"><input type="checkbox" checked={settings.categories[key]} onChange={e => category(key,e.target.checked)}/><span><strong>{label}</strong><small>{description}</small></span></label>)}</div>
     <div className="le-grid-three le-reminder-grid mt-5">
       {settings.categories.planner && <Field label="Task reminder"><select value={settings.reminderTimes.plannerLeadMinutes} onChange={e => time("plannerLeadMinutes",Number(e.target.value))}>{[...new Set([0,5,15,30,60,settings.reminderTimes.plannerLeadMinutes])].sort((a,b) => a-b).map(n => <option key={n} value={n}>{n ? `${n} minutes before` : "At the scheduled time"}</option>)}</select></Field>}
-      {([["overdue","plannerSummaryTime","End-of-day summary"],["resets","resetTime","Reset check-in"],["habits","habitTime","Habit check-in"],["journal","journalTime","Journal time"],["finance","financeTime","Payment reminder"],["reviews","reviewTime","Life review time"]] as const).map(([key,field,label]) => settings.categories[key] && <Field key={field} label={label}><input type="time" value={settings.reminderTimes[field]} onChange={e => time(field,e.target.value)}/></Field>)}
+      {([["overdue","plannerSummaryTime","End-of-day summary"],["resets","resetTime","Reset check-in"],["habits","habitTime","Habit check-in"],["journal","journalTime","Journal time"],["finance","financeTime","Payment reminder"],["fitness","fitnessTime","Workout reminder"],["reviews","reviewTime","Life review time"]] as const).map(([key,field,label]) => settings.categories[key] && <Field key={field} label={label}><input type="time" value={settings.reminderTimes[field]} onChange={e => time(field,e.target.value)}/></Field>)}
     </div><p className="le-muted mt-5">Times follow this device’s time zone. Completed items are skipped. Unfinished tasks receive at most one summary per day.</p>{notice && <p role="status" className="mt-4">{notice}</p>}
   </Card>;
 }

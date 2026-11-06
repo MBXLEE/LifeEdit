@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict');
 const load=require('./load-ts.cjs');
-const {buildNotificationSchedule,defaultNotificationSettings,notificationSettings,focusNotifications,taskOccursOn}=load('lib/notifications.ts');
+const {buildNotificationSchedule,defaultNotificationSettings,notificationSettings,focusNotifications,fitnessNotifications,taskOccursOn}=load('lib/notifications.ts');
 const {advanceFocus}=load('lib/life-domain.ts');
 const {wallTime,dateInZone}=load('lib/notification-time.ts');
 const zone='Africa/Johannesburg', day='2026-10-15';
@@ -46,4 +46,10 @@ assert.equal(wallTime(day,'19:00',zone),Date.parse('2026-10-15T17:00:00Z'));
 assert.equal(wallTime('2026-03-09','09:00','America/New_York'),Date.parse('2026-03-09T13:00:00Z'));
 assert.equal(wallTime('2026-03-07','09:00','America/New_York'),Date.parse('2026-03-07T14:00:00Z'));
 assert(!schedule(base(),now+5*60000).some(r=>r.id===reminder.id),'late lead reminders expire');
+const fitnessData={...base(),fitnessSettings:{reminders:true,workoutDays:[4]},scheduledWorkouts:[{id:'today-plan',date:day,name:'Strength',workoutId:'w',rest:false,completed:false}],fitnessPlans:[],workouts:[{id:'w',name:'Strength'}]};
+assert(fitnessNotifications(fitnessData,defaultNotificationSettings(),wallTime(day,'07:00',zone),zone).some(r=>r.id.includes('today-plan')));
+fitnessData.scheduledWorkouts[0].completed=true;
+assert(!fitnessNotifications(fitnessData,defaultNotificationSettings(),wallTime(day,'07:00',zone),zone).some(r=>r.id.includes('today-plan')));
+fitnessData.fitnessSettings.reminders=false;
+assert.equal(fitnessNotifications(fitnessData,defaultNotificationSettings(),wallTime(day,'07:00',zone),zone).length,0);
 console.log('PASS: task recurrence, contextual reminders, rescheduling/completion/deletion, summaries, Reset sync and completion, focus boundary identity and cancellation, grouping, explicit finance/journal preferences, time zones and stale expiry.');

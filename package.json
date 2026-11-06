@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "npm run typecheck && npm run test:unit && npm run test:notifications && npm run test:focused",
-    "test:unit": "node tests/allocation-status.cjs && node tests/app-mode.cjs && node tests/budget-allocation.cjs && node tests/daily-journal-insights.cjs && node tests/data-integrity.cjs && node tests/domain-three.cjs && node tests/middleware-mode.cjs && node tests/planner-recurrence.cjs && node tests/pwa-worker.cjs && node tests/refinements.cjs && node tests/reset-sync.cjs",
+    "test:unit": "node tests/allocation-status.cjs && node tests/app-mode.cjs && node tests/budget-allocation.cjs && node tests/daily-journal-insights.cjs && node tests/data-integrity.cjs && node tests/domain-three.cjs && node tests/fitness-domain.cjs && node tests/middleware-mode.cjs && node tests/planner-recurrence.cjs && node tests/pwa-worker.cjs && node tests/refinements.cjs && node tests/relationship-migration.cjs && node tests/reset-sync.cjs",
     "typecheck": "tsc --noEmit",
     "test:focused": "node tests/auth-modal-notifications.cjs",
     "test:notifications": "node tests/notifications.cjs && node tests/notification-worker.cjs && node tests/notification-server.cjs"

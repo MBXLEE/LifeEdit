@@ -4,10 +4,11 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { createClient } from "@/lib/supabase/client";
 import { usePathname, useRouter } from "next/navigation";
 import type { Route } from "next";
-import { advanceFocus, extraDefaults, type ExtraData, type Exercise } from "@/lib/life-domain";
+import { advanceFocus, extraDefaults, hydrateRelationship, syncRelationshipPlans, type ExtraData, type Exercise } from "@/lib/life-domain";
 import { refinementDefaults, type RefinementData, type Classification } from "@/lib/refinements";
 import { defaultNotificationSettings, type NotificationSettings } from "@/lib/notifications";
 import { isDemoMode } from "@/lib/app-mode";
+import { defaultFitnessSettings, type ActiveWorkoutSession, type FitnessGoal, type FitnessPlan, type FitnessSettings, type LoggedSet, type NutritionEntry, type ScheduledWorkout } from "@/lib/fitness-domain";
 import { activeDemoProfile, loadDemoWorkspace, saveDemoWorkspace, RESET_KEY, type DemoProfile } from "@/lib/demo-storage";
 
 export const pillars = ["Financial", "Physical", "Mental & Emotional", "Social", "Spiritual", "Personal Growth"];
@@ -32,9 +33,11 @@ export type Habit = { id: string; name: string; direction: "build" | "quit"; dat
 export type Task = {
   id: string; title: string; date: string; time: string; minutes: number; pillar: string; done: boolean; kind?: "time-block" | "todo";
   notes?: string; recurrence?: "none" | "daily" | "weekdays" | "weekly" | "monthly"; recurrenceEnd?: string; completedDates?: string[]; excludedDates?: string[];
+  relationshipId?: string; relationshipPlanId?: string;
 };
-export type Workout = { id: string; name: string; category: string; warmup: string; cooldown?: string; notes?: string; archived?: boolean; exercises: (Omit<Exercise, "category" | "seconds" | "notes"> & Partial<Pick<Exercise, "category" | "seconds" | "notes">>)[] };
+export type Workout = { id: string; name: string; category: string; warmup: string; cooldown?: string; notes?: string; archived?: boolean; estimatedMinutes?: number; exercises: (Omit<Exercise, "category" | "seconds" | "notes"> & Partial<Pick<Exercise, "category" | "seconds" | "notes">>)[] };
 export type JournalPhoto = { id: string; source: string; order: number; name?: string; createdAt: string };
+export type JournalEntry = { id: string; title: string; template: string; pillar: string; body: string; date: string; photos?: JournalPhoto[]; updatedAt?: string; status?: "draft" | "complete"; prompt?: string; mood?: string; tags?: string[]; pinned?: boolean; archived?: boolean };
 export type ResetAccountability = "Strict" | "Accountability" | "Flexible";
 export type ResetStatus = "draft" | "scheduled" | "active" | "completed" | "failed" | "abandoned";
 export type ResetIntensity = "Gentle" | "Balanced" | "Intense";
@@ -65,11 +68,12 @@ export type LifeData = ExtraData & RefinementData & {
   lifePillars: string[];
   goals: Goal[]; habits: Habit[]; tasks: Task[];
   templates: { id: string; name: string; pillar: string; prompts: string[] }[];
-  journals: { id: string; title: string; template: string; pillar: string; body: string; date: string; photos?: JournalPhoto[] }[];
+  journals: JournalEntry[];
   currencies: { code: string; name: string; symbol: string }[]; currency: string;
   categories: string[]; budgets: { id: string; category: string; amount: number; currency: string; month: string }[];
   transactions: { id: string; title: string; category: string; amount: number; type: string; classification?: Classification | ""; currency: string; date: string; plannedDate?: string; dueDate?: string; paid?: boolean; paidDate?: string; status?: "Upcoming" | "Paid" | "Missed"; recurring?: boolean; recurrenceFrequency?: "Weekly" | "Biweekly" | "Monthly" | "Quarterly" | "Yearly"; recurrenceInterval?: number; recurrenceStart?: string; recurrenceEnd?: string }[];
-  workoutTypes: string[]; workouts: Workout[]; workoutLogs: { id: string; name: string; date: string; minutes: number; volume: number; exercises?: Workout["exercises"]; notes?: string }[];
+  workoutTypes: string[]; workouts: Workout[]; workoutLogs: { id: string; name: string; date: string; minutes: number; volume: number; exercises?: Workout["exercises"]; notes?: string; workoutId?: string; scheduleId?: string; planId?: string; sets?: LoggedSet[]; startedAt?: number; endedAt?: number }[];
+  fitnessSettings: FitnessSettings; fitnessGoals: FitnessGoal[]; fitnessPlans: FitnessPlan[]; scheduledWorkouts: ScheduledWorkout[]; activeWorkout: ActiveWorkoutSession | null; nutritionEntries: NutritionEntry[];
   focusTypes: string[]; focus: { id: string; name: string; seconds: number; date: string }[];
   board: { id: string; title: string; url: string; images?: string[]; category?: string; notes?: string; goalId?: string; kind?: string; target?: number; saved?: number; currency?: string; quote?: string; phrase?: string; importance?: VisionImportance; coachNote?: string }[];
   notificationSettings: NotificationSettings;
@@ -89,7 +93,7 @@ export function emptyData(): LifeData {
       ["Who did I connect with today?", "How can I strengthen important relationships?"],
       ["What did I learn during reflection today?", "What am I praying for?"],
       ["What skill am I improving?", "What progress did I make?"]
-    ][i] })), journals: [], currencies: [{ code: "ZAR", name: "South African rand", symbol: "R" }, { code: "USD", name: "US dollar", symbol: "$" }, { code: "GBP", name: "British pound", symbol: "£" }, { code: "EUR", name: "Euro", symbol: "€" }], currency: "ZAR", categories: ["Housing", "Utilities", "Food", "Transport", "Entertainment", "Savings", "Investments", "Health", "Giving"], budgets: [], transactions: [], workoutTypes: ["Full Body", "Upper Body", "Lower Body", "Push", "Pull", "Legs", "Cardio", "Core", "Mobility", "Recovery"], workouts: [], workoutLogs: [], focusTypes: ["Study", "Deep Work", "Reading", "Work"], focus: [], board: [], notificationSettings: defaultNotificationSettings(), lifeResets: [] };
+    ][i] })), journals: [], currencies: [{ code: "ZAR", name: "South African rand", symbol: "R" }, { code: "USD", name: "US dollar", symbol: "$" }, { code: "GBP", name: "British pound", symbol: "£" }, { code: "EUR", name: "Euro", symbol: "€" }], currency: "ZAR", categories: ["Housing", "Utilities", "Food", "Transport", "Entertainment", "Savings", "Investments", "Health", "Giving"], budgets: [], transactions: [], workoutTypes: ["Full Body", "Upper Body", "Lower Body", "Push", "Pull", "Legs", "Cardio", "Core", "Mobility", "Recovery"], workouts: [], workoutLogs: [], fitnessSettings: defaultFitnessSettings(), fitnessGoals: [], fitnessPlans: [], scheduledWorkouts: [], activeWorkout: null, nutritionEntries: [], focusTypes: ["Study", "Deep Work", "Reading", "Work"], focus: [], board: [], notificationSettings: defaultNotificationSettings(), lifeResets: [] };
 }
 function withDefaults(raw: Partial<LifeData>): LifeData {
   const base = emptyData();
@@ -146,7 +150,8 @@ function withDefaults(raw: Partial<LifeData>): LifeData {
       share: { ...{ publicTitle: normalized.publicName ?? normalized.name, showName: false, showDates: false, showStats: false, showMisses: false, showPhotos: false, showReflection: true, statement: "" }, ...(normalized.share ?? {}) }
     };
   });
-  return { ...base, ...raw, goals, board, lifePillars, lifeResets, spendingLimits: { ...base.spendingLimits, ...raw.spendingLimits, categories: { ...base.spendingLimits.categories, ...raw.spendingLimits?.categories } }, notificationSettings };
+  const relationships = (raw.relationships ?? base.relationships).map(hydrateRelationship);
+  return { ...base, ...raw, goals, board, lifePillars, lifeResets, relationships, fitnessSettings: { ...base.fitnessSettings, ...raw.fitnessSettings }, spendingLimits: { ...base.spendingLimits, ...raw.spendingLimits, categories: { ...base.spendingLimits.categories, ...raw.spendingLimits?.categories } }, notificationSettings };
 }
 type Store = { data: LifeData; update: (fn: (data: LifeData) => LifeData) => void; ready: boolean; status: string; error: string; retry: () => void; account: boolean; back: () => void; undo: () => void; undoLabel: string; dismissUndo: () => void; offerUndo: (label: string, restore: (data: LifeData) => LifeData) => void };
 const Context = createContext<Store | null>(null);
@@ -245,7 +250,9 @@ export function LifeProvider({ children }: { children: ReactNode }) {
   }, []);
   const update = useCallback((fn: (data: LifeData) => LifeData) => {
     const before = latest.current;
-    const next = fn(before);
+    const changed = fn(before);
+    const relationships = syncRelationshipPlans(changed.relationships, changed.tasks);
+    const next = relationships === changed.relationships ? changed : { ...changed, relationships };
     const removed: { key: keyof LifeData; rows: { id: string }[] }[] = [];
     for (const key of Object.keys(before) as (keyof LifeData)[]) {
       const a = before[key], b = next[key];

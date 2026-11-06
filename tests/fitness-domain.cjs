@@ -1,0 +1,24 @@
+const assert = require('node:assert/strict');
+const load = require('./load-ts.cjs');
+const { addDays, cmToDisplay, completedVolume, defaultFitnessSettings, displayToCm, displayToKg, elapsedSessionSeconds, goalProgress, kgToDisplay, mondayOf, planOccurrence, weekDates } = load('lib/fitness-domain.ts');
+const { enrichExercise } = load('lib/fitness-exercise-catalog.ts');
+
+assert.equal(mondayOf('2026-11-06'), '2026-11-02');
+assert.deepEqual(weekDates('2026-11-06'), ['2026-11-02','2026-11-03','2026-11-04','2026-11-05','2026-11-06','2026-11-07','2026-11-08']);
+assert.equal(addDays('2026-12-31', 1), '2027-01-01');
+const plan = { status: 'active', startDate: '2026-11-06', weeks: 2, days: [{ weekday: 5, workoutId: 'a', rest: false }] };
+assert.equal(planOccurrence(plan, '2026-11-06').workoutId, 'a');
+assert.equal(planOccurrence(plan, '2026-11-20'), null);
+assert.equal(planOccurrence({ ...plan, status: 'paused' }, '2026-11-06'), null);
+assert.ok(Math.abs(displayToKg(kgToDisplay(70, 'lb'), 'lb') - 70) < 1e-9);
+assert.ok(Math.abs(displayToCm(cmToDisplay(80, 'in'), 'in') - 80) < 1e-9);
+assert.equal(defaultFitnessSettings().reminders, false);
+const session = { startedAt: 1000, pausedMs: 15000, pausedAt: 31000 };
+assert.equal(elapsedSessionSeconds(session, 100000), 15);
+assert.equal(completedVolume([{ completedAt: 'now', weightKg: 30, reps: 8 }, { weightKg: 50, reps: 8 }, { completedAt: 'now', weightKg: 0, reps: 20 }]), 240);
+assert.equal(goalProgress({ kind: 'strength', target: 50, exerciseName: 'Squat' }, [{ date: '2026-11-06', sets: [{ exerciseName: 'Squat', weightKg: 25, completedAt: 'now' }] }]), 50);
+const legacyExercise = { id: 'library-Upper Body-0', name: 'Bench Press', notes: 'My note', rest: 75 };
+assert.equal(enrichExercise(legacyExercise).equipment, 'Barbell, bench');
+assert.equal(enrichExercise(legacyExercise).notes, 'My note');
+assert.deepEqual(legacyExercise, { id: 'library-Upper Body-0', name: 'Bench Press', notes: 'My note', rest: 75 });
+console.log('PASS: fitness dates, plans, canonical units, sessions and goal calculations.');

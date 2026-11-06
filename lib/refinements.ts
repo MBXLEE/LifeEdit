@@ -20,7 +20,7 @@ export type RefinementData = {
   reviewSchedule: { frequency: "Weekly" | "Monthly" | "Quarterly"; enabled: boolean; start: string };
 };
 export function refinementDefaults(): RefinementData {
-  return { goalWeight: null, financeSettings: { payday: 25, payFrequency: "Monthly" }, fitnessPhotos: [], relationshipTypes: ["Family", "Friends", "Romantic", "Professional", "Mentors"], visionCategories: ["Career", "Health", "Fitness", "Relationships", "Finance", "Travel", "Spiritual Life", "Personal Growth"], reviews: [], pillarStyles: defaultPillarStyles(), spendingLimits: { daily: 0, weekly: 0, categories: {} }, dailyBudgetPlans: [], weeklyBudgetPlans: [], journalRatings: [], improvementPlans: [], reviewSchedule: { frequency: "Monthly", enabled: true, start: "" } };
+  return { goalWeight: null, financeSettings: { payday: 25, payFrequency: "Monthly" }, fitnessPhotos: [], relationshipTypes: ["Family", "Friends", "Romantic partners", "Dating", "Colleagues", "Mentors"], visionCategories: ["Career", "Health", "Fitness", "Relationships", "Finance", "Travel", "Spiritual Life", "Personal Growth"], reviews: [], pillarStyles: defaultPillarStyles(), spendingLimits: { daily: 0, weekly: 0, categories: {} }, dailyBudgetPlans: [], weeklyBudgetPlans: [], journalRatings: [], improvementPlans: [], reviewSchedule: { frequency: "Monthly", enabled: true, start: "" } };
 }
 export function defaultPillarStyles(): PillarStyle[] {
   return [

@@ -7,14 +7,15 @@ import Link from "next/link";
 import type { Route } from "next";
 import { usePathname, useRouter } from "next/navigation";
 import { Children, cloneElement, isValidElement, useEffect, useId, useRef, useState, type CSSProperties, type FormEvent, type ReactElement, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Archive, BookOpen, Brain, Briefcase, CalendarDays, Check, ChevronRight, CircleDollarSign, Clock, Download, Dumbbell, Flower2, GraduationCap, ImagePlus, Lightbulb, Pencil, Plus, RotateCcw, Sparkles, Sprout, Trash2, Users, X } from "lucide-react";
-import { useLife, pillars, themeNames, uid, today, configured, type Goal, type Habit, type JournalPhoto, type LifeData, type VisionImportance } from "@/lib/life-store";
+import { ArrowLeft, ArrowRight, Archive, BookOpen, CalendarDays, Check, ChevronRight, Clock, Download, ImagePlus, Pencil, Plus, RotateCcw, Sparkles, Trash2, X } from "lucide-react";
+import { useLife, pillars, themeNames, uid, today, configured, type Goal, type Habit, type LifeData, type VisionImportance } from "@/lib/life-store";
 import { clearAuthPersistence, createClient } from "@/lib/supabase/client";
 import { WorkspaceNavigation, ExploreModules, profileName } from "./workspace-navigation";
 import { InsightsWorkspace } from "./insights-workspace";
 import { RelationshipsWorkspace } from "./relationships-workspace";
+import { JournalWorkspace } from "./journal-workspace";
 import { VisionWorkspace } from "./vision-workspace";
-import { deleteMediaSource, MediaImage, MultiImageUpload, uploadMediaFile } from "./workspace-media";
+import { MultiImageUpload } from "./workspace-media";
 import { budgetGuidanceSummary, defaultPillarStyles, improvementActions, reviewDue } from "@/lib/refinements";
 import { FocusWorkspace } from "./focus-workspace";
 import { BudgetWorkspace, FinanceWorkspace, PaydayCard } from "./finance-workspace";
@@ -71,12 +72,14 @@ function Workspace() {
   const path = usePathname(); const router = useRouter(); const [authError, setAuthError] = useState("");
   useEffect(() => { if (ready && account && !data.onboarded && path !== "/onboarding") router.replace("/onboarding"); }, [ready, account, data.onboarded, path, router]);
   async function logout() { try { if (configured()) { await disconnectBackgroundNotifications(); const { error } = await createClient().auth.signOut(); if (error) throw error; } clearAuthPersistence(); window.location.assign("/login"); } catch { setAuthError("Could not log out. Please try again."); } }
+  if (!ready && path.startsWith("/social")) return <main className="rh-loading" aria-busy={!error}><div className="rh-loading-mark">LE</div><p className="le-eyebrow">The relationship hub</p><h1>Your people, your little world.</h1><p>{error || "Gathering your stories..."}</p>{error ? <Button onClick={retry}>Retry</Button> : <div className="rh-loading-lines" aria-hidden="true"><i/><i/><i/></div>}</main>;
+  if (!ready && path === "/journal") return <main className="jw-loading" aria-busy={!error}><span className="jw-loading-mark"><BookOpen size={31}/></span><p className="jw-eyebrow">Journal</p><h1>Dear me, let&apos;s write.</h1><p>{error || "Opening your private pages..."}</p>{error ? <Button onClick={retry}>Retry</Button> : <div className="jw-loading-lines" aria-hidden="true"><i/><i/><i/></div>}</main>;
   if (!ready) return <main className="le-loading" aria-busy={!error}><p className="font-display text-4xl">The Life Edit</p><p>{error || "Opening your space..."}</p>{error && <Button onClick={retry}>Retry</Button>}</main>;
   if (path === "/life-reset") return <main className="lr-mode-root">{(error || authError) && <div role="alert" className="le-alert">{error || authError}<Button secondary onClick={retry}>Retry</Button></div>}<LifeResetWorkspace /></main>;
   return <WorkspaceNavigation path={path} logout={logout}>
       {(error || authError) && <div role="alert" className="le-alert">{error || authError}<Button secondary onClick={retry}>Retry</Button></div>}
       {undoLabel && <div className="le-undo" role="status"><span>{undoLabel}</span><Button secondary onClick={undo}><RotateCcw size={16} />Undo delete</Button><IconButton title="Dismiss undo" onClick={dismissUndo}><X size={16}/></IconButton></div>}
-      <main key={path} className="le-content">{path === "/dashboard" ? <Dashboard /> : path === "/onboarding" ? <Onboarding /> : path === "/life-edit" ? <LifeEdit /> : path === "/life-reset" ? <LifeResetWorkspace /> : path === "/journal" ? <Journals /> : path === "/finance" ? <FinanceWorkspace /> : path === "/budget" ? <BudgetWorkspace /> : path === "/habits" ? <Habits direction="build" /> : path === "/quit-habits" ? <Habits direction="quit" /> : path === "/fitness" ? <FitnessWorkspace /> : path === "/planner" ? <Planner /> : path === "/focus" ? <FocusWorkspace /> : path === "/insights" ? <InsightsWorkspace /> : path === "/social" ? <RelationshipsWorkspace /> : path === "/spiritual" ? <SpiritualWorkspace /> : <Preferences />}</main>
+      <main key={path} className="le-content">{path === "/dashboard" ? <Dashboard /> : path === "/onboarding" ? <Onboarding /> : path === "/life-edit" ? <LifeEdit /> : path === "/life-reset" ? <LifeResetWorkspace /> : path === "/journal" ? <JournalWorkspace /> : path === "/finance" ? <FinanceWorkspace /> : path === "/budget" ? <BudgetWorkspace /> : path === "/habits" ? <Habits direction="build" /> : path === "/quit-habits" ? <Habits direction="quit" /> : path === "/fitness" ? <FitnessWorkspace /> : path === "/planner" ? <Planner /> : path === "/focus" ? <FocusWorkspace /> : path === "/insights" ? <InsightsWorkspace /> : path.startsWith("/social") ? <RelationshipsWorkspace /> : path === "/spiritual" ? <SpiritualWorkspace /> : <Preferences />}</main>
     </WorkspaceNavigation>;
 
 }
@@ -208,155 +211,6 @@ function GoalEditor({ goal, close }: { goal: Goal; close: () => void }) {
   }
   const vision = draft.visionBoard ?? { enabled: false, images: [], phrase: "", importance: "Medium" as VisionImportance };
   return <Modal title={goal.title ? "Edit goal" : "Create a goal"} close={close}><form onSubmit={saveGoal}><Field label="Goal title"><input autoFocus required value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} /></Field><div className="le-grid-two"><Field label="Time horizon"><select value={draft.horizon} onChange={e => setDraft({ ...draft, horizon: e.target.value, parent: "" })}>{horizons.map(h => <option key={h}>{h}</option>)}</select></Field><Field label="Target date"><input type="date" value={draft.due} onChange={e => setDraft({ ...draft, due: e.target.value })} /></Field></div>{draft.horizon !== "Annual" && <Field label="Parent goal"><select value={draft.parent} onChange={e => setDraft({ ...draft, parent: e.target.value })}><option value="">Independent goal</option>{parents.map(p => <option value={p.id} key={p.id}>{p.title}</option>)}</select></Field>}<Field label="Life pillars"><MultiSelect options={activePillars(data)} selected={draft.pillars} onChange={v => setDraft({ ...draft, pillars: v })} /></Field><Field label={`Progress · ${draft.progress}%`}><input type="range" min="0" max="100" value={draft.progress} onChange={e => setDraft({ ...draft, progress: Number(e.target.value) })} /></Field><Field label="Notes"><textarea value={draft.notes} onChange={e => setDraft({ ...draft, notes: e.target.value })} /></Field><label className="le-check-row"><input type="checkbox" checked={vision.enabled} onChange={e => setDraft({ ...draft, visionBoard: { ...vision, enabled: e.target.checked } })} />Add to Vision Board</label>{vision.enabled && <section className="le-goal-vision-fields"><MultiImageUpload values={vision.images} onBusy={setUploading} onChange={images => setDraft(current => ({ ...current, visionBoard: { ...(current.visionBoard ?? vision), images } }))} /><Field label="Word or phrase"><input maxLength={60} value={vision.phrase} onChange={e => setDraft({ ...draft, visionBoard: { ...vision, phrase: e.target.value } })} placeholder="Confidence, Soft Life, My Future Home" /></Field><Field label="Importance"><select value={vision.importance} onChange={e => setDraft({ ...draft, visionBoard: { ...vision, importance: e.target.value as VisionImportance } })}>{importanceOptions.map(option => <option key={option}>{option}</option>)}</select></Field></section>}{error && <p role="alert" className="le-error">{error}</p>}<div className="le-row"><SaveButton disabled={uploading}>{uploading ? "Adding images..." : "Save goal"}</SaveButton>{data.goals.some(g => g.id === draft.id) && <Button secondary onClick={() => { update(d => removeGoalAndReferences(d, draft.id)); close(); }}><Trash2 size={16}/>Delete goal</Button>}</div></form></Modal>;
-}
-
-function pillarIcon(pillar: string) {
-  const key = pillar.toLowerCase();
-  if (key.includes("financ") || key.includes("money") || key.includes("budget")) return CircleDollarSign;
-  if (key.includes("physical") || key.includes("fitness") || key.includes("health")) return Dumbbell;
-  if (key.includes("mental") || key.includes("emotional")) return Brain;
-  if (key.includes("social") || key.includes("relationship")) return Users;
-  if (key.includes("spiritual") || key.includes("faith") || key.includes("prayer")) return Flower2;
-  if (key.includes("academic") || key.includes("study") || key.includes("learn")) return GraduationCap;
-  if (key.includes("career") || key.includes("work")) return Briefcase;
-  if (key.includes("growth")) return Sprout;
-  return Sparkles;
-}
-function pillarPromptLabel(pillar: string) {
-  const lower = pillar.toLowerCase();
-  if (lower.includes("financial")) return "financial well-being";
-  if (lower.includes("physical")) return "physical well-being";
-  if (lower.includes("mental") || lower.includes("emotional")) return "mental and emotional well-being";
-  if (lower.includes("social")) return "social connection";
-  if (lower.includes("spiritual")) return "spiritual life";
-  if (lower.includes("growth")) return "personal growth";
-  return `${pillar.toLowerCase()} progress`;
-}
-function notebookTone(data: LifeData, pillar: string, index: number) {
-  const curated: Record<string, string> = {
-    Financial: "#6f8068",
-    Physical: "#bd7d6d",
-    "Mental & Emotional": "#758ca0",
-    Social: "#b17984",
-    Spiritual: "#9180a6",
-    "Personal Growth": "#b8895e"
-  };
-  const custom = ["#7f7867", "#6f8791", "#8b7f99", "#8a8365", "#93736f", "#72836f", "#7e7788", "#8a735e"];
-  const palette = pillarPalette(data, pillar);
-  const hash = [...pillar].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  const base = curated[pillar] ?? (data.pillarStyles.some(style => style.pillar === pillar) ? `color-mix(in srgb, ${palette.base} 46%, ${custom[hash % custom.length]})` : custom[index % custom.length]);
-  return {
-    "--notebook-base": base,
-    "--notebook-soft": `color-mix(in srgb, ${base} 18%, #fbf7f0)`,
-    "--notebook-deep": `color-mix(in srgb, ${base} 78%, #2f2527)`,
-    "--notebook-ink": `color-mix(in srgb, ${base} 34%, #fffaf2)`
-  } as CSSProperties;
-}
-
-function Journals() {
-  const { data, update, account } = useLife();
-  const currentPillars = activePillars(data);
-  const historicalPillars = [...new Set(data.journals.map(j => j.pillar).filter(p => p && !currentPillars.includes(p)))];
-  const [selectedPillar, setSelectedPillar] = useState<string | null>(null);
-  const [entry, setEntry] = useState<LifeData["journals"][number] | null>(null);
-  const [rating, setRating] = useState<number | "">("");
-  const [message, setMessage] = useState("");
-  const [photoBusy, setPhotoBusy] = useState(false);
-  const [photoError, setPhotoError] = useState("");
-  const [lightbox, setLightbox] = useState<JournalPhoto | null>(null);
-  const savedEntry = entry ? data.journals.find(j => j.id === entry.id) : null;
-  const photos = entry?.photos?.slice().sort((a,b)=>a.order-b.order) ?? [];
-  const notebookPillar = selectedPillar && (currentPillars.includes(selectedPillar) || historicalPillars.includes(selectedPillar)) ? selectedPillar : null;
-  const notebookEntries = notebookPillar ? data.journals.filter(j => j.pillar === notebookPillar).slice().sort((a,b)=>b.date.localeCompare(a.date) || b.id.localeCompare(a.id)) : [];
-  const activeTemplates = notebookPillar ? data.templates.filter(t => t.pillar === notebookPillar) : [];
-  const prompts = [...new Set(activeTemplates.flatMap(t => t.prompts))];
-  function cleanupUnsavedPhotos(draft:LifeData["journals"][number]) { const saved=data.journals.find(j=>j.id===draft.id); const savedIds=new Set(saved?.photos?.map(photo=>photo.id)??[]); draft.photos?.filter(photo=>!savedIds.has(photo.id)).forEach(photo=>void deleteMediaSource(photo.source)); }
-  function closeEntry() { if (entry) cleanupUnsavedPhotos(entry); setEntry(null); setPhotoBusy(false); setPhotoError(""); }
-  function openEntry(j:LifeData["journals"][number]) { setSelectedPillar(j.pillar); setEntry({ ...j, photos: j.photos?.map(photo=>({ ...photo })) ?? [] }); setPhotoError(""); setRating(data.journalRatings.find(r=>r.journalId===j.id)?.rating ?? ""); }
-  function create(pillar = notebookPillar) {
-    if (!pillar) return;
-    setMessage(""); setPhotoError("");
-    const template = data.templates.find(t => t.pillar === pillar)?.id ?? "";
-    setRating("");
-    setEntry({ id: uid(), title: "", template, pillar, body: "", date: today(), photos: [] });
-  }
-  async function addPhotos(files:FileList|null) {
-    if (!entry || !files?.length) return;
-    setPhotoBusy(true); setPhotoError("");
-    const accepted:JournalPhoto[]=[]; const failures:string[]=[];
-    for (const file of Array.from(files)) {
-      try {
-        const source=await uploadMediaFile(file,{account,bucket:"journal-photos",folder:entry.id});
-        accepted.push({ id: uid(), source, order: photos.length + accepted.length, name: file.name, createdAt: new Date().toISOString() });
-      } catch(e) { failures.push(`${file.name}: ${e instanceof Error ? e.message : "Image could not be saved. Try again."}`); }
-    }
-    if (accepted.length) setEntry(current=>current?{...current,photos:[...(current.photos??[]),...accepted].map((photo,index)=>({...photo,order:index}))}:current);
-    if (failures.length) setPhotoError(failures.length===1?failures[0]:`${failures.length} photos could not be added. ${failures[0]}`);
-    setPhotoBusy(false);
-  }
-  function removePhoto(photo:JournalPhoto) {
-    if (!entry) return;
-    const wasSaved=savedEntry?.photos?.some(item=>item.id===photo.id) ?? false;
-    if (!wasSaved) void deleteMediaSource(photo.source);
-    setEntry({ ...entry, photos: photos.filter(item=>item.id!==photo.id).map((item,index)=>({ ...item, order:index })) });
-  }
-  function saveEntry(event:FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (!entry || photoBusy) return;
-    const ordered={ ...entry, title: entry.title.trim(), body: entry.body.trim(), photos: photos.map((photo,index)=>({ ...photo, order:index })) };
-    const removed=(savedEntry?.photos??[]).filter(photo=>!ordered.photos?.some(item=>item.id===photo.id));
-    const existingRating=data.journalRatings.find(r=>r.journalId===entry.id);
-    const journalRating=rating==="" ? null : { id:existingRating?.id ?? uid(), journalId:entry.id, pillar:entry.pillar, rating, date:entry.date };
-    update(d => ({ ...d, journals: [...d.journals.filter(j => j.id !== entry.id), ordered], journalRatings: journalRating ? [...d.journalRatings.filter(r => r.journalId !== entry.id), journalRating] : d.journalRatings.filter(r => r.journalId !== entry.id) }));
-    removed.forEach(photo=>void deleteMediaSource(photo.source));
-    setEntry(null); setSelectedPillar(ordered.pillar); setMessage(rating==="" ? "Reflection saved." : "Reflection and daily rating saved."); setPhotoError("");
-  }
-  function deleteEntry() {
-    if (!entry) return;
-    photos.forEach(photo=>void deleteMediaSource(photo.source));
-    update(d => ({ ...d, journals: d.journals.filter(j => j.id !== entry.id), journalRatings: d.journalRatings.filter(r=>r.journalId!==entry.id) }));
-    setEntry(null); setPhotoError("");
-  }
-  if (!notebookPillar) return <><Heading section="Journal" title="Choose your journal." />
-    <section className="le-notebook-library" aria-label="Journal notebooks">{currentPillars.map((pillar,index) => {
-      const Icon = pillarIcon(pillar); const count = data.journals.filter(j => j.pillar === pillar).length; const latest = data.journals.filter(j => j.pillar === pillar).sort((a,b)=>b.date.localeCompare(a.date))[0]; const saved = latest ? data.journalRatings.find(r=>r.journalId===latest.id) : null;
-      return <button key={pillar} type="button" className="le-notebook-book" style={notebookTone(data,pillar,index)} aria-label={`${pillar} journal${count ? `, ${count} ${count === 1 ? "entry" : "entries"}` : ""}${saved ? `, latest rating ${saved.rating} out of 10` : ""}`} onClick={() => { setSelectedPillar(pillar); setMessage(""); }}>
-        <span className="le-book-spine" aria-hidden="true" /><span className="le-cover-frame" aria-hidden="true" /><span className="le-cover-signet" aria-hidden="true"><Icon size={28} /></span><strong>{pillar}</strong><span className="le-cover-line" aria-hidden="true" />
-      </button>;
-    })}</section>
-    {historicalPillars.length > 0 && <section className="le-past-notebooks"><div className="le-row"><div><p className="le-eyebrow">Past notebooks</p><h2>Historical reflections</h2></div></div><div className="le-inline">{historicalPillars.map(pillar => <Button key={pillar} secondary onClick={() => setSelectedPillar(pillar)}><BookOpen size={16}/>{pillar}</Button>)}</div></section>}
-    {message && <p role="status" className="le-toast">{message}</p>}</>;
-
-  const activeNotebook = currentPillars.includes(notebookPillar);
-  const NotebookIcon = pillarIcon(notebookPillar);
-  return <><section className="le-journal-room" style={notebookTone(data,notebookPillar,currentPillars.indexOf(notebookPillar))}>
-    <button type="button" className="le-back-link" onClick={() => { setSelectedPillar(null); setEntry(null); }}><ArrowLeft size={16}/>All journals</button>
-    <div className="le-journal-room-cover"><span className="le-book-spine" aria-hidden="true" /><NotebookIcon size={52}/></div>
-    <div><p className="le-eyebrow">{activeNotebook ? "Notebook" : "Past notebook"}</p><h1>{notebookPillar} Journal</h1>{prompts[0] && <p>{prompts[0]}</p>}</div>
-    {activeNotebook && <Button onClick={() => create(notebookPillar)}><Pencil size={16} />New Entry</Button>}
-  </section>
-    <div className="le-grid-main mt-6"><section><div className="le-row mb-5"><div><p className="le-eyebrow">Previous entries</p><h2>{notebookEntries.length ? `${notebookEntries.length} saved ${notebookEntries.length === 1 ? "reflection" : "reflections"}` : "A quiet first page."}</h2></div></div>{!notebookEntries.length ? <Empty title="No reflections in this notebook yet." /> : <div className="le-entry-list">{notebookEntries.map(j => { const saved=data.journalRatings.find(r=>r.journalId===j.id); const count=j.photos?.length??0; const thumb=j.photos?.slice().sort((a,b)=>a.order-b.order)[0]; return <button key={j.id} className="le-entry le-entry-card" onClick={() => openEntry(j)}>{thumb && <MediaImage source={thumb.source} alt={thumb.name || "Journal entry photo"} />}<span><small>{j.date}{saved?` · ${saved.rating}/10`:""}{count?` · ${count} photo${count===1?"":"s"}`:""}</small><h3>{j.title || "Untitled reflection"}</h3><p>{j.body.slice(0, 120) || "No preview available."}</p></span><ArrowRight size={16} /></button>; })}</div>}</section>
-      <aside className="le-notebook-side"><Card><p className="le-eyebrow">Optional prompts</p>{prompts.length ? prompts.slice(0,4).map((p,i)=><p key={i} className="le-prompt">{p}</p>) : <p className="le-muted">No prompts saved for this pillar.</p>}<Link href="/settings">Manage templates <ArrowRight size={14}/></Link></Card></aside></div>{message && <p role="status" className="le-toast">{message}</p>}
-    {entry && <Modal title={data.journals.some(j => j.id === entry.id) ? "Edit reflection" : "New entry"} close={closeEntry}><form onSubmit={saveEntry} className="le-writing-form"><div className="le-entry-context" style={notebookTone(data,entry.pillar,0)}><NotebookIcon size={22}/><span>{entry.pillar} Journal</span></div><Field label="Date"><input type="date" required value={entry.date} onChange={e => setEntry({ ...entry, date: e.target.value })} /></Field><Field label="Title"><input value={entry.title} placeholder="Add a title (optional)" onChange={e => setEntry({ ...entry, title: e.target.value })} /></Field>{data.templates.find(t => t.id === entry.template)?.prompts?.length ? <div className="le-prompt-strip">{data.templates.find(t => t.id === entry.template)?.prompts.map((p, i) => <button type="button" key={i} onClick={() => setEntry(current => current ? { ...current, body: current.body ? `${current.body}\n\n${p}\n` : `${p}\n` } : current)}><Lightbulb size={14}/>{p}</button>)}</div> : null}<Field label="Reflection"><textarea required rows={12} placeholder="What's on your mind?" value={entry.body} onChange={e => setEntry({ ...entry, body: e.target.value })} /></Field><JournalPhotoPicker photos={photos} busy={photoBusy} error={photoError} addPhotos={addPhotos} removePhoto={removePhoto} viewPhoto={setLightbox} /><section className="le-rating-panel"><div className="le-row"><div><p className="le-eyebrow">Daily pillar rating</p><h3>How would you rate your {pillarPromptLabel(entry.pillar)} today?</h3></div>{rating!=="" && <Button secondary onClick={() => setRating("")}>Remove rating</Button>}</div><input aria-label={`${entry.pillar} daily rating`} type="range" min="1" max="10" value={rating==="" ? 5 : rating} onChange={e=>setRating(Number(e.target.value))}/><div className="le-scale">{Array.from({ length: 10 }, (_, i) => <button type="button" key={i} aria-pressed={rating === i + 1} onClick={() => setRating(i + 1)}>{i + 1}</button>)}</div><div className="le-rating-context"><span>Low</span><strong>{rating==="" ? "Optional" : `${rating}/10`}</strong><span>High</span></div></section><div className="le-row"><SaveButton disabled={photoBusy}>{photoBusy ? "Adding photos..." : "Save Entry"}</SaveButton>{data.journals.some(j => j.id === entry.id) && <Button secondary disabled={photoBusy} onClick={deleteEntry}><Trash2 size={16}/>Delete entry</Button>}</div></form></Modal>}
-    {lightbox && <PhotoLightbox photo={lightbox} close={() => setLightbox(null)} />}
-  </>;
-}
-
-function JournalPhotoPicker({ photos, busy, error, addPhotos, removePhoto, viewPhoto }: { photos: JournalPhoto[]; busy: boolean; error: string; addPhotos: (files: FileList | null) => Promise<void>; removePhoto: (photo: JournalPhoto) => void; viewPhoto: (photo: JournalPhoto) => void }) {
-  return <section className="le-journal-photos-editor" aria-label="Attached photos">
-    <div className="le-row">
-      <div><p className="le-eyebrow">Memories</p><p className="le-muted">Attach optional photos that belong with this reflection.</p></div>
-      <label className={`le-photo-add ${busy ? "is-busy" : ""}`}><ImagePlus size={16} />{busy ? "Adding..." : "Add photos"}<input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={busy} onChange={e => { void addPhotos(e.target.files); e.currentTarget.value = ""; }} /></label>
-    </div>
-    {error && <p role="alert" className="le-error">{error}</p>}
-    {photos.length > 0 && <div className="le-journal-photo-grid">{photos.map(photo => <figure key={photo.id} className="le-journal-photo-tile">
-      <button type="button" onClick={() => viewPhoto(photo)} aria-label={`View ${photo.name || "attached photo"}`}><MediaImage source={photo.source} alt={photo.name || "Attached journal photo"} /></button>
-      <figcaption><span>{photo.name || "Attached photo"}</span><IconButton title="Remove photo" onClick={() => removePhoto(photo)}><X size={16}/></IconButton></figcaption>
-    </figure>)}</div>}
-  </section>;
-}
-
-function PhotoLightbox({ photo, close }: { photo: JournalPhoto; close: () => void }) {
-  return <Modal title={photo.name || "Journal photo"} close={close}><div className="le-photo-lightbox"><MediaImage source={photo.source} alt={photo.name || "Journal photo"} /></div></Modal>;
 }
 
 function Habits({ direction }: { direction: "build" | "quit" }) {
